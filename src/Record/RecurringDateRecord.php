@@ -2,6 +2,7 @@
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
+ * @license https://github.com/gewerk/recurring-dates/blob/main/LICENSE.md
  */
 
 namespace Gewerk\RecurringDates\Record;
