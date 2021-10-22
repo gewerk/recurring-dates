@@ -1,0 +1,592 @@
+<?php
+/**
+ * @link https://gewerk.dev/plugins/recurring-dates
+ * @copyright 2021 gewerk, Dennis Morhardt
+ */
+
+namespace Gewerk\RecurringDates\Field;
+
+use Craft;
+use craft\base\Element;
+use craft\base\ElementInterface;
+use craft\base\Field;
+use craft\elements\db\ElementQuery;
+use craft\elements\db\ElementQueryInterface;
+use craft\helpers\Cp;
+use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
+use craft\helpers\ElementHelper;
+use craft\helpers\Html;
+use craft\helpers\Json;
+use craft\helpers\StringHelper;
+use craft\services\Elements;
+use craft\validators\ArrayValidator;
+use craft\web\View;
+use DateTime;
+use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
+use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
+use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
+use Gewerk\RecurringDates\Plugin;
+use Recurr\DateExclusion;
+use Recurr\Rule;
+
+class RecurringDatesField extends Field
+{
+    /**
+     * @var int|null Min dates
+     */
+    public $min = 0;
+
+    /**
+     * @var int|null Max dates
+     */
+    public $max = null;
+
+    /**
+     * @var bool Allow recurring
+     */
+    public $allowRecurring = true;
+
+    /**
+     * @var bool Static
+     */
+    public $static = false;
+
+    /**
+     * @inheritdoc
+     */
+    public static function displayName(): string
+    {
+        return Craft::t('recurring-dates', 'Recurring Dates');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function valueType(): string
+    {
+        return RecurringDateElementQuery::class;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function hasContentColumn(): bool
+    {
+        return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function supportedTranslationMethods(): array
+    {
+        return [
+            self::TRANSLATION_METHOD_NONE,
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     * @return string[][]
+     */
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+        $rules[] = [['min', 'max'], 'integer', 'min' => 0];
+
+        return $rules;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsHtml()
+    {
+        return
+            Cp::textFieldHtml([
+                'label' => Craft::t('recurring-dates', 'Minimal number of dates'),
+                'id' => 'min',
+                'name' => 'min',
+                'inputmode' => 'numeric',
+                'type' => 'number',
+                'steps' => '1',
+                'value' => $this->min,
+            ]) .
+            Cp::textFieldHtml([
+                'label' => Craft::t('recurring-dates', 'Maximal number of dates'),
+                'id' => 'max',
+                'name' => 'max',
+                'inputmode' => 'numeric',
+                'type' => 'number',
+                'steps' => '1',
+                'value' => $this->max,
+            ]) .
+            Cp::lightswitchFieldHtml([
+                'label' => Craft::t('recurring-dates', 'Allow dates to be recurring'),
+                'id' => 'allow-recurring',
+                'name' => 'allowRecurring',
+                'on' => $this->allowRecurring,
+            ]) .
+            Cp::lightswitchFieldHtml([
+                'label' => Craft::t('recurring-dates', 'Make field static'),
+                'id' => 'static',
+                'name' => 'static',
+                'on' => $this->static,
+                'instructions' => Craft::t('recurring-dates', 'Static fields the number of dates can not be changed (the add/remove buttons are disabled)')
+            ]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function normalizeValue($value, ElementInterface $element = null)
+    {
+        if ($value instanceof RecurringDateElementQuery) {
+            return $value;
+        }
+
+        $query = $this->populateQuery(RecurringDateElement::find(), $element);
+
+        if ($value === '') {
+            $query->setCachedResult([]);
+        } elseif ($element && is_array($value)) {
+            $query->setCachedResult($this->populateQueryFromRequest($value, $element));
+        }
+
+        return $query;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    public function serializeValue($value, ElementInterface $element = null)
+    {
+        $serialized = [];
+        $new = 0;
+
+        /** @var RecurringDateElementQuery $value */
+        foreach ($value->all() as $recurringDate) {
+            /** @var RecurringDateElement $recurringDate */
+            $recurringDateId = $recurringDate->id ?? 'new' . ++$new;
+            $serialized[$recurringDateId] = $recurringDate->jsonSerialize();
+        }
+
+        return $serialized;
+    }
+
+    /**
+     * @inheritdoc
+     * @param RecurringDateElementQuery|null $value
+     */
+    public function getInputHtml($value, ElementInterface $element = null): string
+    {
+        // Register asset bundle
+        /** @var View */
+        $view = Craft::$app->getView();
+        $view->registerAssetBundle(RecurringDatesAssetBundle::class);
+
+        // Resolve value
+        if ($element !== null && $element->hasEagerLoadedElements($this->handle)) {
+            $value = $element->getEagerLoadedElements($this->handle);
+        }
+
+        if ($value instanceof RecurringDateElementQuery) {
+            $value = $value->getCachedResult() ?? $value->limit(null)->anyStatus()->all();
+        }
+
+        // Get settings
+        $settings = [
+            'min' => $this->min,
+            'max' => $this->max,
+            'allowRecurring' => $this->allowRecurring,
+            'static' => $this->static,
+        ];
+
+        // Register js
+        $id = $view->namespaceInputId($this->handle);
+        $view->registerJs("new Craft.RecurringDates('{$id}');");
+
+        // Render field
+        return Html::tag('recurring-dates', '', [
+            ':value' => Json::encode($value, JSON_UNESCAPED_UNICODE),
+            ':settings' => Json::encode($settings, JSON_UNESCAPED_UNICODE),
+            'name' => $this->handle,
+            'id' => Html::id($this->handle),
+        ]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getElementValidationRules(): array
+    {
+        return [
+            [
+                'validateDates',
+                'on' => [Element::SCENARIO_ESSENTIALS, Element::SCENARIO_DEFAULT, Element::SCENARIO_LIVE],
+            ],
+            [
+                ArrayValidator::class,
+                'min' => $this->min ?: null,
+                'max' => $this->max ?: null,
+                'tooFew' => Craft::t('recurring-dates', '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.'),
+                'tooMany' => Craft::t('recurring-dates', '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.'),
+                'skipOnEmpty' => false,
+                'on' => Element::SCENARIO_LIVE,
+            ],
+        ];
+    }
+
+    /**
+     * Validates all dates
+     *
+     * @param ElementInterface $element
+     * @return void
+     */
+    public function validateDates(ElementInterface $element)
+    {
+        /** @var RecurringDateElementQuery $value */
+        $value = $element->getFieldValue($this->handle);
+        $dates = $value->all();
+        $allDatesValidate = true;
+        $scenario = $element->getScenario();
+
+        foreach ($dates as $index => $date) {
+            /** @var RecurringDateElement $date */
+            if ($scenario === Element::SCENARIO_ESSENTIALS || $scenario === Element::SCENARIO_LIVE) {
+                $date->setScenario($scenario);
+            }
+
+            if (!$date->validate()) {
+                $element->addModelErrors($date, "{$this->handle}[{$index}]");
+                $allDatesValidate = false;
+            }
+        }
+
+        if (!$allDatesValidate) {
+            $value->setCachedResult($dates);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    public function isValueEmpty($value, ElementInterface $element): bool
+    {
+        /** @var RecurringDateElementQuery $value */
+        return $value->count() === 0;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function beforeElementDelete(ElementInterface $element): bool
+    {
+        if (!parent::beforeElementDelete($element)) {
+            return false;
+        }
+
+        foreach (Craft::$app->getSites()->getAllSiteIds() as $siteId) {
+            $query = RecurringDateElement::find();
+            $query->anyStatus();
+            $query->siteId($siteId);
+            $query->ownerId($element->id);
+
+            /** @var RecurringDateElement[] $recurringDates */
+            $recurringDates = $query->all();
+
+            foreach ($recurringDates as $recurringDate) {
+                $recurringDate->deletedWithOwner = true;
+                Craft::$app->getElements()->deleteElement($recurringDate, $element->hardDelete);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterElementPropagate(ElementInterface $element, bool $isNew)
+    {
+        $fieldService = Plugin::$plugin->getFieldService();
+        $resetValue = false;
+
+        if ($element->duplicateOf !== null) {
+            $fieldService->duplicateElements($this, $element->duplicateOf, $element);
+            $resetValue = true;
+        } elseif ($element->isFieldDirty($this->handle) || !empty($element->newSiteIds)) {
+            $fieldService->saveElements($this, $element);
+        } elseif ($element->mergingCanonicalChanges) {
+            $fieldService->mergeCanonicalChanges($this, $element);
+            $resetValue = true;
+        }
+
+        if ($resetValue || $isNew) {
+            /** @var RecurringDateElementQuery $query */
+            $query = $this->populateQuery($element->getFieldValue($this->handle), $element);
+            $query->clearCachedResult();
+        }
+
+        parent::afterElementPropagate($element, $isNew);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterElementRestore(ElementInterface $element)
+    {
+        foreach (ElementHelper::supportedSitesForElement($element) as $siteInfo) {
+            $recurringDates = RecurringDateElement::find()
+                ->anyStatus()
+                ->siteId($siteInfo['siteId'])
+                ->ownerId($element->id)
+                ->trashed()
+                ->andWhere(['recurring_dates.deletedWithOwner' => true])
+                ->all();
+
+            foreach ($recurringDates as $recurringDate) {
+                Craft::$app->getElements()->restoreElement($recurringDate);
+            }
+        }
+
+        parent::afterElementRestore($element);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterElementSave(ElementInterface $element, bool $isNew)
+    {
+        if ($element->getIsCanonical()) {
+            $jobsService = Craft::$app->getQueue();
+            $jobsService->push(new CreateOccurrencesJob([
+                'elementType' => get_class($element),
+                'elementId' => $element->id,
+                'siteId' => $element->siteId,
+                'fieldHandle' => $this->handle,
+            ]));
+        }
+
+        parent::afterElementRestore($element, $isNew);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function modifyElementsQuery(ElementQueryInterface $query, $value)
+    {
+        /** @var ElementQuery $query */
+        if (!$value) {
+            return null;
+        }
+
+        // Prefix handle query
+        $ns = $this->handle . '_' . StringHelper::randomString(5);
+
+        // Where field
+        $whereField = "[[occurrences_{$ns}.startDate]]";
+        if ($query->withOngoingDates === true ||
+            (is_array($query->withOngoingDates)
+            && in_array($this->handle, $query->withOngoingDates))
+        ) {
+            $whereField = "[[occurrences_{$ns}.endDate]]";
+        }
+
+        // Build query
+        $query->subQuery->addSelect([
+            $this->handle => "[[occurrences_{$ns}.startDate]]",
+        ]);
+
+        $query->subQuery->innerJoin(
+            ["occurrences_{$ns}" => Plugin::OCCURRENCES_TABLE],
+            [
+                'AND',
+                "[[occurrences_{$ns}.fieldId]] = :fieldId",
+                "[[occurrences_{$ns}.elementId]] = [[elements.id]]",
+                "[[occurrences_{$ns}.siteId]] = [[elements_sites.siteId]]",
+                Db::parseDateParam($whereField, $value),
+            ],
+            [
+                ':fieldId' => $this->id,
+            ],
+        );
+
+        return null;
+    }
+
+    /**
+     * Populates the field’s [[RecurringDateElementQuery]] value based on the owner element.
+     *
+     * @param RecurringDateElementQuery $query
+     * @param ElementInterface|null $element
+     * @return RecurringDateElementQuery
+     */
+    private function populateQuery(RecurringDateElementQuery $query, ElementInterface $element = null): RecurringDateElementQuery
+    {
+        if ($element && $element->id) {
+            $query->ownerId = $element->id;
+
+            if ($query->id === false) {
+                $query->id = null;
+            }
+        } else {
+            $query->id = false;
+        }
+
+        $query
+            ->fieldId($this->id)
+            ->siteId($element->siteId ?? null);
+
+        return $query;
+    }
+
+    /**
+     * Parses the recurring dates from request.
+     *
+     * @param array $value
+     * @param ElementInterface $element
+     * @return RecurringDateElement[]
+     */
+    private function populateQueryFromRequest(array $value, ElementInterface $element): array
+    {
+        /** @var RecurringDateElement[] */
+        $existingRecurringDates = $element->id ? RecurringDateElement::find()
+            ->fieldId($this->id)
+            ->ownerId($element->id)
+            ->siteId($element->siteId)
+            ->anyStatus()
+            ->indexBy('id')
+            ->all() : [];
+
+        // Get sort order and dates from request
+        if (isset($value['dates']) || isset($value['sortOrder'])) {
+            $newDates = $value['dates'] ?? [];
+            $newSortOrder = $value['sortOrder'] ?? array_keys($existingRecurringDates);
+        } else {
+            $newDates = $value;
+            $newSortOrder = array_keys($value);
+        }
+
+        /** @var RecurringDateElement|null */
+        $prevRecurringDate = null;
+
+        /** @var RecurringDateElement[] */
+        $recurringDates = [];
+
+        // Create entries
+        foreach ($newSortOrder as $id) {
+            if (isset($newDates[$id])) {
+                $data = $newDates[$id];
+            } elseif (isset(Elements::$duplicatedElementSourceIds[$id]) && isset($newDates[Elements::$duplicatedElementSourceIds[$id]])) {
+                $data = $newDates[Elements::$duplicatedElementSourceIds[$id]];
+            } else {
+                $data = [];
+            }
+
+            if (strpos($id, 'new') !== 0 && !isset($existingRecurringDates[$id]) &&
+                isset(Elements::$duplicatedElementIds[$id]) && isset($existingRecurringDates[Elements::$duplicatedElementIds[$id]])) {
+                $id = Elements::$duplicatedElementIds[$id];
+            }
+
+            if (isset($existingRecurringDates[$id])) {
+                $recurringDate = $existingRecurringDates[$id];
+                $recurringDate->dirty = !empty($data);
+            } else {
+                $recurringDate = new RecurringDateElement();
+                $recurringDate->fieldId = $this->id;
+                $recurringDate->ownerId = $element->id;
+                $recurringDate->siteId = $element->siteId;
+            }
+
+            // Set owner
+            $recurringDate->setOwner($element);
+
+            // Set start and end date
+            if (isset($data['startEnd'])) {
+                if ($data['startEnd']['start'] instanceof DateTime) {
+                    $recurringDate->startDate = clone $data['startEnd']['start'];
+                } else {
+                    $recurringDate->startDate = DateTimeHelper::toDateTime($data['startEnd']['start']['raw']);
+                }
+
+                if ($data['startEnd']['end'] instanceof DateTime) {
+                    $recurringDate->endDate = clone $data['startEnd']['end'];
+                } else {
+                    $recurringDate->endDate = DateTimeHelper::toDateTime($data['startEnd']['end']['raw']);
+                }
+            }
+
+            // Set all day
+            if (isset($data['allDay'])) {
+                $recurringDate->allDay = (bool) $data['allDay'];
+            }
+
+            // Is event recurring
+            if (isset($data['recurring']) && $data['recurring']) {
+                // Build base rule
+                $rrule = new Rule();
+                $rrule->setFreq($data['repeat']['frequency']);
+
+                // Interval
+                if (isset($data['repeat']['interval'])) {
+                    $rrule->setInterval($data['repeat']['interval']);
+                }
+
+                // Month day
+                if (isset($data['repeat']['monthDay'])) {
+                    $rrule->setByMonthDay($data['repeat']['monthDay']);
+                }
+
+                // Position
+                if (isset($data['repeat']['position'])) {
+                    $rrule->setBySetPosition($data['repeat']['position']);
+                }
+
+                // Month
+                if (isset($data['repeat']['month'])) {
+                    $rrule->setByMonth($data['repeat']['month']);
+                }
+
+                // Day
+                if (isset($data['repeat']['day'])) {
+                    $rrule->setByDay($data['repeat']['day']);
+                }
+
+                // Add ending after number of executions or date
+                if ($data['repeat']['endsAfter'] === 'after') {
+                    $rrule->setCount((int) $data['repeat']['count']);
+                } elseif ($data['repeat']['endsAfter'] === 'onDate') {
+                    $rrule->setUntil(DateTimeHelper::toDateTime($data['repeat']['endsOn']['raw']));
+                }
+
+                // Add exceptions
+                if (isset($data['repeat']['exceptions'])) {
+                    $exceptions = [];
+
+                    foreach ($data['repeat']['exceptions'] as $exception) {
+                        $exceptions[] = new DateExclusion(DateTimeHelper::toDateTime($exception['raw']), false);
+                    }
+
+                    $rrule->setExDates($exceptions);
+                }
+
+                $recurringDate->rrule = $rrule->getString();
+            }
+
+            if ($prevRecurringDate instanceof ElementInterface) {
+                $prevRecurringDate->setNext($recurringDate);
+                $recurringDate->setPrev($prevRecurringDate);
+            }
+
+            $prevRecurringDate = $recurringDate;
+            $recurringDates[] = $recurringDate;
+        }
+
+        return $recurringDates;
+    }
+}

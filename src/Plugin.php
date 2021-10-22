@@ -1,0 +1,264 @@
+<?php
+/**
+ * @link https://gewerk.dev/plugins/recurring-dates
+ * @copyright 2021 gewerk, Dennis Morhardt
+ */
+
+namespace Gewerk\RecurringDates;
+
+use Craft;
+use craft\base\Element;
+use craft\base\Plugin as BasePlugin;
+use craft\elements\db\ElementQuery;
+use craft\events\DefineBehaviorsEvent;
+use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterTemplateRootsEvent;
+use craft\i18n\PhpMessageSource;
+use craft\services\Fields;
+use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
+use Gewerk\RecurringDates\Behavior\ElementBehavior;
+use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
+use Gewerk\RecurringDates\Field\RecurringDatesField;
+use Gewerk\RecurringDates\Migration\InstallMigration;
+use Gewerk\RecurringDates\Service\IcsService;
+use Gewerk\RecurringDates\Service\FieldService;
+use Gewerk\RecurringDates\Service\FormatService;
+use Gewerk\RecurringDates\Service\OccurrenceService;
+use Gewerk\RecurringDates\Twig\Extension\RecurringDatesTwigExtension;
+use Gewerk\RecurringDates\Twig\Variable\IcsVariable;
+use yii\base\Event;
+
+/**
+ * Inits the plugins and acts as hub for all services
+ *
+ * @package Gewerk\RecurringDates
+ */
+class Plugin extends BasePlugin
+{
+    /**
+     * Database tables
+     */
+    const DATES_TABLE = '{{%recurring_dates}}';
+    const OCCURRENCES_TABLE = '{{%recurring_dates_occurrences}}';
+
+    /**
+     * Current plugin instance
+     *
+     * @var self
+     */
+    public static $plugin;
+
+    /**
+     * @inheritdoc
+     */
+    public $schemaVersion = '0.1.0';
+
+    /**
+     * @var string
+     */
+    private $_rootPath;
+
+    /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        parent::init();
+
+        // Save current instance
+        self::$plugin = $this;
+
+        // Set controller namespaces
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $this->controllerNamespace = 'Gewerk\\RecurringDates\\Console\\Controller';
+        } else {
+            $this->controllerNamespace = 'Gewerk\\RecurringDates\\Controller';
+        }
+
+        // Set alias
+        Craft::setAlias('@recurring-dates', $this->getRootPath());
+
+        // Load translations
+        Craft::$app->getI18n()->translations['recurring-dates'] = [
+            'class' => PhpMessageSource::class,
+            'sourceLanguage' => 'en',
+            'basePath' => '@recurring-dates/translations',
+            'forceTranslation' => true,
+            'allowOverrides' => true,
+        ];
+
+        // Register components
+        $this->setComponents([
+            'field' => FieldService::class,
+            'ics' => IcsService::class,
+            'occurrence' => OccurrenceService::class,
+            'format' => FormatService::class,
+        ]);
+
+        // Register all events
+        $this->registerFields();
+        $this->registerTemplateRoots();
+        $this->registerBehaviors();
+        $this->registerTwigExtensions();
+        $this->registerTwigVariables();
+    }
+
+    /**
+     * Returns the plugin root path
+     *
+     * @return string
+     */
+    public function getRootPath()
+    {
+        if ($this->_rootPath === null) {
+            $this->_rootPath = dirname(dirname(__FILE__));
+        }
+
+        return $this->_rootPath;
+    }
+
+    /**
+     * Returns the plugin resource path
+     *
+     * @return string
+     */
+    public function getResourcePath()
+    {
+        return $this->getRootPath() . DIRECTORY_SEPARATOR . 'resources';
+    }
+
+    /**
+     * Returns the field service
+     *
+     * @return FieldService
+     */
+    public function getFieldService()
+    {
+        return $this->get('field');
+    }
+
+    /**
+     * Returns the ICS service
+     *
+     * @return IcsService
+     */
+    public function getIcsService()
+    {
+        return $this->get('ics');
+    }
+
+    /**
+     * Returns the occurrence service
+     *
+     * @return OccurrenceService
+     */
+    public function getOccurrenceService()
+    {
+        return $this->get('occurrence');
+    }
+
+    /**
+     * Returns the format service
+     *
+     * @return FormatService
+     */
+    public function getFormatService()
+    {
+        return $this->get('format');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function createInstallMigration()
+    {
+        return new InstallMigration();
+    }
+
+    /**
+     * Registers all fields
+     *
+     * @return void
+     */
+    private function registerFields()
+    {
+        Event::on(
+            Fields::class,
+            Fields::EVENT_REGISTER_FIELD_TYPES,
+            function (RegisterComponentTypesEvent $event) {
+                $event->types[] = RecurringDatesField::class;
+            }
+        );
+    }
+
+    /**
+     * Registers the template root paths
+     *
+     * @return void
+     */
+    private function registerTemplateRoots()
+    {
+        Event::on(
+            View::class,
+            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
+            function (RegisterTemplateRootsEvent $event) {
+                $event->roots[$this->id] = $this->getResourcePath() . DIRECTORY_SEPARATOR . 'templates';
+            }
+        );
+    }
+
+    /**
+     * Registers all custom behaviors
+     *
+     * @return void
+     */
+    private function registerBehaviors()
+    {
+        Event::on(
+            ElementQuery::class,
+            ElementQuery::EVENT_DEFINE_BEHAVIORS,
+            function (DefineBehaviorsEvent $event) {
+                $event->behaviors['recurring-dates'] = ElementQueryBehavior::class;
+            }
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_DEFINE_BEHAVIORS,
+            function (DefineBehaviorsEvent $event) {
+                $event->behaviors['recurring-dates'] = ElementBehavior::class;
+            }
+        );
+    }
+
+    /**
+     * Registers all twig extensions
+     *
+     * @return void
+     */
+    private function registerTwigExtensions()
+    {
+        /** @var View */
+        $view = Craft::$app->getView();
+        $view->registerTwigExtension(new RecurringDatesTwigExtension());
+    }
+
+    /**
+     * Registers all twig variables
+     *
+     * @return void
+     */
+    private function registerTwigVariables()
+    {
+        Event::on(
+            CraftVariable::class,
+            CraftVariable::EVENT_INIT,
+            function (Event $event) {
+                /** @var CraftVariable $variables */
+                $variables = $event->sender;
+                $variables->set('ics', IcsVariable::class);
+            }
+        );
+    }
+}

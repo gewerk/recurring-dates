@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "dependencies": {
+    "@popperjs/core": "^2.4.0",
+    "craftcms-sass": "^3.5.7",
+    "date-fns": "^2.23.0",
+    "laravel-mix": "^6.0.29",
+    "lodash-es": "^4.17.21",
+    "v-calendar": "^2.3.2",
+    "vue": "^2.6.14"
+  },
+  "devDependencies": {
+    "resolve-url-loader": "^4.0.0",
+    "sass": "^1.39.0",
+    "sass-loader": "^12.1.0",
+    "vue-loader": "^15.9.7",
+    "vue-template-compiler": "^2.6.14"
+  }
+}

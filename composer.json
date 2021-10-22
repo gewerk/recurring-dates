@@ -1,0 +1,64 @@
+{
+  "name": "gewerk/recurring-dates",
+  "description": "Datetime field for Craft CMS with multiple and recurring occurrences",
+  "type": "craft-plugin",
+  "version": "0.1.0",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "gewerk",
+      "email": "support@gewerk.dev",
+      "homepage": "https://gewerk.dev/"
+    },
+    {
+      "name": "Dennis Morhardt",
+      "email": "info@dennismorhardt.de",
+      "homepage": "https://dennismorhardt.de/"
+    }
+  ],
+  "support": {
+    "email": "support@gewerk.dev",
+    "issues": "https://github.com/gewerk/recurring-dates/issues?state=open",
+    "source": "https://github.com/gewerk/recurring-dates",
+    "docs": "https://github.com/gewerk/recurring-dates",
+    "rss": "https://github.com/gewerk/recurring-dates/commits/v2.atom"
+  },
+  "require": {
+    "craftcms/cms": "^3.6.0",
+    "openpsa/ranger": "^0.5.2",
+    "simshaun/recurr": "^5.0",
+    "spatie/icalendar-generator": "^2.3"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
+    "squizlabs/php_codesniffer": "^3.5",
+    "yiisoft/yii2-coding-standards": "^2.0"
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "platform": {
+      "php": "7.4"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Gewerk\\RecurringDates\\": "src/"
+    }
+  },
+  "extra": {
+    "name": "Recurring Dates",
+    "handle": "recurring-dates",
+    "documentationUrl": "https://gewerk.dev/plugins/recurring-dates",
+    "changelogUrl": "https://raw.githubusercontent.com/gewerk/recurring-dates/main/CHANGELOG.md",
+    "class": "Gewerk\\RecurringDates\\Plugin"
+  },
+  "scripts": {
+    "install-codestandards": [
+      "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+    ],
+    "post-install-cmd": [
+      "@install-codestandards"
+    ]
+  }
+}
