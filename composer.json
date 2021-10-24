@@ -25,9 +25,9 @@
   },
   "require": {
     "craftcms/cms": "^3.6.0",
+    "eluceo/ical": "^0.16.1",
     "openpsa/ranger": "^0.5.2",
-    "simshaun/recurr": "^5.0",
-    "spatie/icalendar-generator": "^2.3"
+    "simshaun/recurr": "^5.0"
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
@@ -38,7 +38,7 @@
     "sort-packages": true,
     "optimize-autoloader": true,
     "platform": {
-      "php": "7.4"
+      "php": "7.3"
     }
   },
   "autoload": {

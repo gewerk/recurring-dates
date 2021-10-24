@@ -43,13 +43,13 @@ class IcsController extends Controller
 
         $ics = Plugin::$plugin->getIcsService()->generate($element, $fieldHandle);
 
-        var_dump($ics);
-        exit;
-
         return Craft::$app->getResponse()->sendContentAsFile(
             $ics,
             sprintf('%d-%s.ics', $element->id, $element->slug),
-            ['inline' => true]
+            [
+                'inline' => false,
+                'mimeType' => 'text/calendar',
+            ]
         );
     }
 }

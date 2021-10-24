@@ -9,12 +9,17 @@ namespace Gewerk\RecurringDates\Service;
 
 use craft\base\Component;
 use craft\base\ElementInterface;
+use Eluceo\iCal\Component\Calendar;
+use Eluceo\iCal\Property\RawStringValue;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Event\IcsEventElementEvent as IcsEventElementEvent;
-use Spatie\IcalendarGenerator\Components\Calendar;
-use Spatie\IcalendarGenerator\Components\Event;
-use Spatie\IcalendarGenerator\Properties\TextProperty;
+use Gewerk\RecurringDates\Override\Eluceo\iCal\Component\Event;
 
+/**
+ * iCalendar related services
+ *
+ * @package Gewerk\RecurringDates\Service
+ */
 class IcsService extends Component
 {
     /**
@@ -25,37 +30,34 @@ class IcsService extends Component
     public function generate(ElementInterface $element, string $fieldHandle): string
     {
         // Create calendar
-        $calendar = Calendar::create();
+        $calendar = new Calendar('-//gewerk/recurring-dates//EN');
 
         /** @var RecurringDateElement[] */
         $dates = $element->getFieldValue($fieldHandle)->all();
         foreach ($dates as $date) {
-            $eventElement = Event::create($element->title)
-                ->uniqueIdentifier($date->uid)
-                ->startsAt($date->startDate)
-                ->endsAt($date->endDate);
+            $eventComponent = new Event($date->uid);
+            $eventComponent->setSummary($element->title);
+            $eventComponent->setDtStart($date->startDate);
+            $eventComponent->setDtEnd($date->endDate);
 
             if ($date->allDay) {
-                $eventElement->fullDay();
+                $eventComponent->setNoTime(true);
             }
 
             if ($date->rrule) {
-                $rrule = (new TextProperty('RRULE', $date->rrule))
-                    ->withoutEscaping();
-
-                $eventElement->appendProperty($rrule);
+                $eventComponent->addValue('RRULE', new RawStringValue($date->rrule));
             }
 
             $event = new IcsEventElementEvent([
                 'element' => $element,
                 'date' => $date,
-                'eventElement' => $eventElement,
+                'eventComponent' => $eventComponent,
             ]);
 
             $this->trigger(self::EVENT_AFTER_ICS_ELEMENT_CREATE, $event);
-            $calendar->event($event->eventElement);
+            $calendar->addComponent($event->eventComponent);
         }
 
-        return $calendar->get();
+        return $calendar->render();
     }
 }
