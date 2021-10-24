@@ -118,7 +118,11 @@ class MigrateController extends Controller
             if ($calendarizeRecord['repeats']) {
                 $rrule = new Rule();
                 $rrule->setInterval($calendarizeRecord['repeatType'] === 'biweekly' ? 2 : 1);
-                $rrule->setUntil($calendarizeRecord['endRepeatDate']);
+
+                if ($calendarizeRecord['endRepeatDate'] instanceof DateTime) {
+                    $rrule->setUntil($calendarizeRecord['endRepeatDate']);
+                }
+
                 $rrule->setFreq($calendarizeRecord['repeatType'] === 'biweekly' ? 'WEEKLY' : strtoupper($calendarizeRecord['repeatType']));
 
                 if ($rrule->getFreq() === 'WEEKLY') {
@@ -137,7 +141,9 @@ class MigrateController extends Controller
                     $exceptions = [];
 
                     foreach ($calendarizeRecord['exceptions'] as $exception) {
-                        $exceptions[] = new DateExclusion($exception, false);
+                        if ($exception instanceof DateTime) {
+                            $exceptions[] = new DateExclusion($exception, false);
+                        }
                     }
 
                     $rrule->setExDates($exceptions);
