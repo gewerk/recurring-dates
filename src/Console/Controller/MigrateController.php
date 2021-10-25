@@ -11,6 +11,7 @@ use Craft;
 use craft\console\Controller;
 use craft\db\Query;
 use craft\db\Table;
+use craft\errors\UnsupportedSiteException;
 use craft\helpers\Console;
 use craft\helpers\Json;
 use craft\queue\Queue;
@@ -153,16 +154,20 @@ class MigrateController extends Controller
             }
 
             // Save calendar entry
-            $elementsService->saveElement($recurringDate);
+            try {
+                $elementsService->saveElement($recurringDate);
 
-            // Push job
-            $queue->push(new CreateOccurrencesJob([
-                'elementType' => $elementsService->getElementTypeById($calendarizeRecord['ownerId']),
-                'elementId' => (int) $calendarizeRecord['ownerId'],
-                'siteId' => (int) $calendarizeRecord['ownerSiteId'],
-                'fieldHandle' => $targetFieldHandle,
-                'onlyFutureOccurrences' => false,
-            ]));
+                // Push job
+                $queue->push(new CreateOccurrencesJob([
+                    'elementType' => $elementsService->getElementTypeById($calendarizeRecord['ownerId']),
+                    'elementId' => (int) $calendarizeRecord['ownerId'],
+                    'siteId' => (int) $calendarizeRecord['ownerSiteId'],
+                    'fieldHandle' => $targetFieldHandle,
+                    'onlyFutureOccurrences' => false,
+                ]));
+            } catch (UnsupportedSiteException $e) {
+                Craft::error("{$calendarizeRecord['id']} missed migration for site {$e->siteId}.", 'recurring-dates');
+            }
         }
 
         Console::endProgress('Done.' . PHP_EOL);
