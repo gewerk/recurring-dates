@@ -560,9 +560,15 @@ class RecurringDatesField extends Field
 
                 // Add ending after number of executions or date
                 if ($data['repeat']['endsAfter'] === 'after') {
-                    $rrule->setCount((int) $data['repeat']['count']);
+                    $rrule->setCount((int) $data['repeat']['count'] ?? 1);
                 } elseif ($data['repeat']['endsAfter'] === 'onDate') {
-                    $rrule->setUntil(DateTimeHelper::toDateTime($data['repeat']['endsOn']['raw']));
+                    $endsOn = $data['repeat']['endsOn'] ?? new DateTime();
+
+                    if ($endsOn instanceof DateTime) {
+                        $rrule->setUntil(clone $endsOn);
+                    } else {
+                        $rrule->setUntil(DateTimeHelper::toDateTime($endsOn['raw']));
+                    }
                 }
 
                 // Add exceptions
@@ -570,7 +576,11 @@ class RecurringDatesField extends Field
                     $exceptions = [];
 
                     foreach ($data['repeat']['exceptions'] as $exception) {
-                        $exceptions[] = new DateExclusion(DateTimeHelper::toDateTime($exception['raw']), false);
+                        if (!($exception instanceof DateTime)) {
+                            $exception = DateTimeHelper::toDateTime($exception['raw']);
+                        }
+
+                        $exceptions[] = new DateExclusion($exception, false);
                     }
 
                     $rrule->setExDates($exceptions);
