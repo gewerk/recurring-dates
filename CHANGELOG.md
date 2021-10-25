@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 - 2021-10-25
+
+- Fix: Fix unsavable elements while migration
+
 ## 0.3.0 - 2021-10-25
 
 - New: Add an option to migration for offset and sites
