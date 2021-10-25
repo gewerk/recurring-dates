@@ -145,7 +145,11 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         }
 
         if (!$owner) {
-            return [Craft::$app->getSites()->getPrimarySite()->id];
+            if ($this->siteId) {
+                return [$this->siteId];
+            } else {
+                return [Craft::$app->getSites()->getPrimarySite()->id];
+            }
         }
 
         return ArrayHelper::getColumn(ElementHelper::supportedSitesForElement($owner), 'siteId');
