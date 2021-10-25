@@ -36,6 +36,33 @@ use yii\console\ExitCode;
 class MigrateController extends Controller
 {
     /**
+     * @var int
+     */
+    public $offset = 0;
+
+    /**
+     * @var string|null
+     */
+    public $sites = null;
+
+    /**
+     * @inheritdoc
+     */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    public function options($actionID)
+    {
+        return ['offset', 'sites'];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function optionAliases()
+    {
+        return ['o' => 'offset', 's' => 'sites'];
+    }
+
+    /**
      * Migrates field values from Calendarize fields
      *
      * @param string $sourceFieldHandle Handle of the Calendarize field.
@@ -68,12 +95,23 @@ class MigrateController extends Controller
         }
 
         // Get calendarize data
-        $calendarizeRecords = (new Query())
+        $query = (new Query())
             ->from('{{%calendarize}}')
             ->where([
                 'fieldId' => $sourceField->id,
-            ])
-            ->all();
+            ]);
+
+        if ($this->sites) {
+            $query->andWhere([
+                'ownerSiteId' => array_map('trim', explode(',', $this->sites)),
+            ]);
+        }
+
+        if (is_numeric($this->offset)) {
+            $query->offset((int) $this->offset);
+        }
+
+        $calendarizeRecords = $query->all();
 
         // Create records for target field
         $total = count($calendarizeRecords);
