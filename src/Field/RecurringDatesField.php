@@ -422,6 +422,8 @@ class RecurringDatesField extends Field
             ],
         );
 
+        $query->subQuery->addGroupBy('[[elements.id]]');
+
         return null;
     }
 
