@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 - 2021-10-26
+
+- Fix: Remove double source date from occurrences
+- Fix: Fix sticky recurring setting
+- Fix: Always generate all occurrences
+- Fix: Catch recurr exceptions
+
 ## 0.3.1 - 2021-10-25
 
 - Fix: Fix unsavable elements while migration
