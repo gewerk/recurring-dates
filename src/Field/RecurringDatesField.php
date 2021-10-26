@@ -369,17 +369,16 @@ class RecurringDatesField extends Field
      */
     public function afterElementSave(ElementInterface $element, bool $isNew)
     {
-        if ($element->getIsCanonical()) {
-            $jobsService = Craft::$app->getQueue();
-            $jobsService->push(new CreateOccurrencesJob([
-                'elementType' => get_class($element),
-                'elementId' => $element->id,
-                'siteId' => $element->siteId,
-                'fieldHandle' => $this->handle,
-            ]));
-        }
+        $jobsService = Craft::$app->getQueue();
+        $jobsService->push(new CreateOccurrencesJob([
+            'elementType' => get_class($element),
+            'elementId' => $element->id,
+            'siteId' => $element->siteId,
+            'fieldHandle' => $this->handle,
+            'onlyFutureOccurrences' => false,
+        ]));
 
-        parent::afterElementRestore($element, $isNew);
+        parent::afterElementSave($element, $isNew);
     }
 
     /**
