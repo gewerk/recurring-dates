@@ -30,8 +30,14 @@ use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\DateExclusion;
+use Recurr\Exception as RecurrException;
 use Recurr\Rule;
 
+/**
+ * The main field
+ *
+ * @package Gewerk\RecurringDates\Field
+ */
 class RecurringDatesField extends Field
 {
     /**
@@ -480,7 +486,7 @@ class RecurringDatesField extends Field
         $recurringDates = [];
 
         // Create entries
-        foreach ($newSortOrder as $id) {
+        foreach ($newSortOrder as $index => $id) {
             if (isset($newDates[$id])) {
                 $data = $newDates[$id];
             } elseif (isset(Elements::$duplicatedElementSourceIds[$id]) && isset($newDates[Elements::$duplicatedElementSourceIds[$id]])) {
@@ -529,64 +535,68 @@ class RecurringDatesField extends Field
 
             // Is event recurring
             if (isset($data['recurring']) && $data['recurring']) {
-                // Build base rule
-                $rrule = new Rule();
-                $rrule->setFreq($data['repeat']['frequency']);
+                try {
+                    // Build base rule
+                    $rrule = new Rule();
+                    $rrule->setFreq($data['repeat']['frequency']);
 
-                // Interval
-                if (isset($data['repeat']['interval'])) {
-                    $rrule->setInterval($data['repeat']['interval']);
-                }
-
-                // Month day
-                if (isset($data['repeat']['monthDay'])) {
-                    $rrule->setByMonthDay($data['repeat']['monthDay']);
-                }
-
-                // Position
-                if (isset($data['repeat']['position'])) {
-                    $rrule->setBySetPosition($data['repeat']['position']);
-                }
-
-                // Month
-                if (isset($data['repeat']['month'])) {
-                    $rrule->setByMonth($data['repeat']['month']);
-                }
-
-                // Day
-                if (isset($data['repeat']['day'])) {
-                    $rrule->setByDay($data['repeat']['day']);
-                }
-
-                // Add ending after number of executions or date
-                if ($data['repeat']['endsAfter'] === 'after') {
-                    $rrule->setCount((int) $data['repeat']['count'] ?? 1);
-                } elseif ($data['repeat']['endsAfter'] === 'onDate') {
-                    $endsOn = $data['repeat']['endsOn'] ?? new DateTime();
-
-                    if ($endsOn instanceof DateTime) {
-                        $rrule->setUntil(clone $endsOn);
-                    } else {
-                        $rrule->setUntil(DateTimeHelper::toDateTime($endsOn['raw']));
+                    // Interval
+                    if (isset($data['repeat']['interval'])) {
+                        $rrule->setInterval($data['repeat']['interval']);
                     }
-                }
 
-                // Add exceptions
-                if (isset($data['repeat']['exceptions'])) {
-                    $exceptions = [];
+                    // Month day
+                    if (isset($data['repeat']['monthDay'])) {
+                        $rrule->setByMonthDay($data['repeat']['monthDay']);
+                    }
 
-                    foreach ($data['repeat']['exceptions'] as $exception) {
-                        if (!($exception instanceof DateTime)) {
-                            $exception = DateTimeHelper::toDateTime($exception['raw']);
+                    // Position
+                    if (isset($data['repeat']['position'])) {
+                        $rrule->setBySetPosition($data['repeat']['position']);
+                    }
+
+                    // Month
+                    if (isset($data['repeat']['month'])) {
+                        $rrule->setByMonth($data['repeat']['month']);
+                    }
+
+                    // Day
+                    if (isset($data['repeat']['day'])) {
+                        $rrule->setByDay($data['repeat']['day']);
+                    }
+
+                    // Add ending after number of executions or date
+                    if ($data['repeat']['endsAfter'] === 'after') {
+                        $rrule->setCount((int) $data['repeat']['count'] ?? 1);
+                    } elseif ($data['repeat']['endsAfter'] === 'onDate') {
+                        $endsOn = $data['repeat']['endsOn'] ?? new DateTime();
+
+                        if ($endsOn instanceof DateTime) {
+                            $rrule->setUntil(clone $endsOn);
+                        } else {
+                            $rrule->setUntil(DateTimeHelper::toDateTime($endsOn['raw']));
+                        }
+                    }
+
+                    // Add exceptions
+                    if (isset($data['repeat']['exceptions'])) {
+                        $exceptions = [];
+
+                        foreach ($data['repeat']['exceptions'] as $exception) {
+                            if (!($exception instanceof DateTime)) {
+                                $exception = DateTimeHelper::toDateTime($exception['raw']);
+                            }
+
+                            $exceptions[] = new DateExclusion($exception, false);
                         }
 
-                        $exceptions[] = new DateExclusion($exception, false);
+                        $rrule->setExDates($exceptions);
                     }
 
-                    $rrule->setExDates($exceptions);
+                    $recurringDate->rrule = $rrule->getString();
+                } catch (RecurrException $e) {
+                    $recurringDate->addError('rrule', $e->getMessage());
                 }
-
-                $recurringDate->rrule = $rrule->getString();
             }
 
             if ($prevRecurringDate instanceof ElementInterface) {
