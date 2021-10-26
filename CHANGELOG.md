@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 - 2021-10-26
+
+- Fix: Don't show elements with occurrences multiple times
+
 ## 0.3.2 - 2021-10-26
 
 - Fix: Remove double source date from occurrences
