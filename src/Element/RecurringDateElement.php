@@ -294,18 +294,18 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
         if ($rrule = $this->getRruleInstance()) {
             $transformer = new ArrayTransformer();
-            $constraint = $onlyFutureOccurrences ? new AfterConstraint($now, true) : null;
+            $endDatePlusOne = (clone $this->endDate)->modify('+1 second');
+            $occurrencesAfter = $onlyFutureOccurrences && $this->endDate < $now ? $now : $endDatePlusOne;
+            $constraint = new AfterConstraint($occurrencesAfter, true);
             $recurrences = $transformer->transform($rrule, $constraint);
 
             foreach ($recurrences as $recurrence) {
-                if ($recurrence->getStart() !== $this->startDate) {
-                    $occurrences[] = new OccurrenceModel([
-                        'owner' => $this,
-                        'startDate' => $recurrence->getStart(),
-                        'endDate' => $recurrence->getEnd(),
-                        'allDay' => $this->allDay,
-                    ]);
-                }
+                $occurrences[] = new OccurrenceModel([
+                    'owner' => $this,
+                    'startDate' => $recurrence->getStart(),
+                    'endDate' => $recurrence->getEnd(),
+                    'allDay' => $this->allDay,
+                ]);
             }
         }
 

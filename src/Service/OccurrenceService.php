@@ -168,9 +168,8 @@ class OccurrenceService extends Component
             if (count($matches) > 0) {
                 unset($occurrences[$index]);
 
-                foreach (array_keys($matches) as $key) {
-                    unset($savedOccurrences[$key]);
-                }
+                $keys = array_keys($matches);
+                unset($savedOccurrences[$keys[0]]);
             } else {
                 $unsavedOccurrences[] = [
                     'dateId' => $occurrence->owner->id,
