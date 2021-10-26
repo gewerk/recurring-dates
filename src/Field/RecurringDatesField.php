@@ -596,6 +596,8 @@ class RecurringDatesField extends Field
                 } catch (RecurrException $e) {
                     $recurringDate->addError('rrule', $e->getMessage());
                 }
+            } else {
+                $recurringDate->rrule = null;
             }
 
             if ($prevRecurringDate instanceof ElementInterface) {

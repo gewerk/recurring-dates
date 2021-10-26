@@ -212,10 +212,14 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function setRrule(string $rrule = null)
     {
         $this->rrule = $rrule;
+        $this->_rruleInstance = null;
 
         if ($rruleInstance = $this->getRruleInstance()) {
             $this->count = $rruleInstance->getCount();
             $this->untilDate = $rruleInstance->getUntil();
+        } else {
+            $this->count = null;
+            $this->untilDate = null;
         }
     }
 
