@@ -12,6 +12,7 @@ use craft\base\Component;
 use craft\base\ElementInterface;
 use craft\base\FieldInterface;
 use craft\helpers\ArrayHelper;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\Db;
 use DateTime;
 use DateTimeZone;
@@ -98,9 +99,9 @@ class OccurrenceService extends Component
         foreach ($query->all() as $record) {
             /** @var OccurrenceRecord $record */
             $occurrence = new OccurrenceModel();
-            $occurrence->startDate = $record->startDate;
-            $occurrence->endDate = $record->endDate;
-            $occurrence->allDay = $record->allDay;
+            $occurrence->startDate = DateTimeHelper::toDateTime($record->startDate);
+            $occurrence->endDate = DateTimeHelper::toDateTime($record->endDate);
+            $occurrence->allDay = (bool) $record->allDay;
             $occurrence->owner = Craft::$app->getElements()->getElementById(
                 $record->dateId,
                 RecurringDateElement::class,
