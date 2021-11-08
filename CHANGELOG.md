@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4 - 2021-11-08
+
+- Fix: Convert record data to correct types
+
 ## 0.3.3 - 2021-10-26
 
 - Fix: Don't show elements with occurrences multiple times
