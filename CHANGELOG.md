@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 - 2022-02-10
+
+* Fix: Wrong mapping for first occurrence
+
 ## 0.4.0 - 2022-02-10
 
 - New: Saves first occurrence directly. Queue will be only used for recurring occurrences.
