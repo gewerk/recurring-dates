@@ -570,7 +570,7 @@ class RecurringDatesField extends Field
 
                     // Add ending after number of executions or date
                     if ($data['repeat']['endsAfter'] === 'after') {
-                        $rrule->setCount((int) $data['repeat']['count'] ?? 1);
+                        $rrule->setCount($data['repeat']['count'] ?? 1);
                     } elseif ($data['repeat']['endsAfter'] === 'onDate') {
                         $endsOn = $data['repeat']['endsOn'] ?? new DateTime();
 
