@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 - 2022-02-10
+
+- New: Saves first occurrence directly. Queue will be only used for recurring occurrences.
+- Fix: Fix undefined index
+
 ## 0.3.4 - 2021-11-08
 
 - Fix: Convert record data to correct types
