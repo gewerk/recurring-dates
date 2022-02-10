@@ -56,6 +56,7 @@ class InstallMigration extends Migration
             'startDate' => $this->dateTime(),
             'endDate' => $this->dateTime(),
             'allDay' => $this->boolean()->defaultValue(false),
+            'first' => $this->boolean()->defaultValue(false),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
             'uid' => $this->uid(),

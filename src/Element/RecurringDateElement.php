@@ -13,10 +13,13 @@ use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
+use craft\helpers\Db;
 use craft\helpers\ElementHelper;
 use DateTime;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Model\OccurrenceModel;
+use Gewerk\RecurringDates\Plugin;
+use Gewerk\RecurringDates\Record\OccurrenceRecord;
 use Gewerk\RecurringDates\Record\RecurringDateRecord;
 use JsonSerializable;
 use Recurr\DateExclusion;
@@ -271,25 +274,37 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     }
 
     /**
+     * Returns the first occurrence.
+     *
+     * @return OccurrenceModel
+     */
+    public function getFirstOccurrence(): OccurrenceModel
+    {
+        return new OccurrenceModel([
+            'owner' => $this,
+            'startDate' => $this->startDate,
+            'endDate' => $this->endDate,
+            'allDay' => $this->allDay,
+            'first' => true,
+        ]);
+    }
+
+    /**
      * Get all occurrences
      *
      * @param bool $onlyFutureOccurrences
+     * @param bool $includeFirstOccurrence
      * @return OccurrenceModel[]
      */
-    public function getOccurrences(bool $onlyFutureOccurrences = true)
+    public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true)
     {
         $now = new DateTime();
 
         /** @var OccurrenceModel[] */
         $occurrences = [];
 
-        if (!$onlyFutureOccurrences || $this->endDate > $now) {
-            $occurrences[] = new OccurrenceModel([
-                'owner' => $this,
-                'startDate' => $this->startDate,
-                'endDate' => $this->endDate,
-                'allDay' => $this->allDay,
-            ]);
+        if ($includeFirstOccurrence && (!$onlyFutureOccurrences || $this->endDate > $now)) {
+            $occurrences[] = $this->getFirstOccurrence();
         }
 
         if ($rrule = $this->getRruleInstance()) {
@@ -344,6 +359,35 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
         // Save record
         $record->save(false);
+
+        // Get the occurrence record
+        if (!$isNew) {
+            $occurrenceRecord = OccurrenceRecord::findOne([
+                'dateId' => $this->id,
+                'elementId' => $this->getOwner()->id,
+                'siteId' => $this->getOwner()->siteId,
+                'fieldId' => $this->fieldId,
+                'first' => true,
+            ]);
+
+            if (!$occurrenceRecord) {
+                throw new Exception('First occurrence not found.');
+            }
+        } else {
+            $occurrenceRecord = new OccurrenceRecord();
+            $occurrenceRecord->dateId = $this->id;
+            $occurrenceRecord->elementId = $this->getOwner()->id;
+            $occurrenceRecord->siteId = $this->getOwner()->siteId;
+            $occurrenceRecord->fieldId = $this->fieldId;
+            $occurrenceRecord->first = true;
+        }
+
+        $occurrenceRecord->startDate = $this->startDate;
+        $occurrenceRecord->endDate = $this->endDate;
+        $occurrenceRecord->allDay = $this->allDay;
+
+        // Save first occurrence
+        $occurrenceRecord->save(false);
 
         parent::afterSave($isNew);
     }

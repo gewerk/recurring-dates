@@ -20,6 +20,7 @@ use Gewerk\RecurringDates\Plugin;
  * @property DateTime $startDate
  * @property DateTime $endDate
  * @property bool $allDay
+ * @property bool $first
  * @package Gewerk\RecurringDates\Record
  */
 class OccurrenceRecord extends ActiveRecord

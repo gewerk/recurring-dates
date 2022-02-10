@@ -10,6 +10,7 @@ namespace Gewerk\RecurringDates;
 use Craft;
 use craft\base\Element;
 use craft\base\Plugin as BasePlugin;
+use craft\db\MigrationManager;
 use craft\elements\db\ElementQuery;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\RegisterComponentTypesEvent;
@@ -53,7 +54,7 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      */
-    public $schemaVersion = '0.1.0';
+    public $schemaVersion = '0.4.0';
 
     /**
      * @var string
@@ -167,6 +168,19 @@ class Plugin extends BasePlugin
     public function getFormatService()
     {
         return $this->get('format');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getMigrator(): MigrationManager
+    {
+        /** @var MigrationManager */
+        $migrationManager = $this->get('migrator');
+        $migrationManager->migrationPath = $this->getBasePath() . DIRECTORY_SEPARATOR . 'Migration';
+        $migrationManager->migrationNamespace = 'Gewerk\\RecurringDates\\Migration';
+
+        return $migrationManager;
     }
 
     /**

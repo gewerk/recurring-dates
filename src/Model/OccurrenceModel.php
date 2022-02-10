@@ -37,4 +37,9 @@ class OccurrenceModel extends Model
      * @var bool
      */
     public $allDay = false;
+
+    /**
+     * @var bool
+     */
+    public $first = false;
 }

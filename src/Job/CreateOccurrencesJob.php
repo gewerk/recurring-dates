@@ -46,6 +46,11 @@ class CreateOccurrencesJob extends BaseJob
     public $onlyFutureOccurrences = true;
 
     /**
+     * @var bool
+     */
+    public $includeFirstOccurrence = false;
+
+    /**
      * @inheritdoc
      */
     protected function defaultDescription(): string
@@ -77,7 +82,15 @@ class CreateOccurrencesJob extends BaseJob
             $this->setProgress($queue, ($i + 1) / $total);
 
             try {
-                $occurrenceService->createOccurrences($element, $this->fieldHandle, $this->onlyFutureOccurrences);
+                if ($this->includeFirstOccurrence) {
+                    $occurrenceService->saveFirstOccurrence($element, $this->fieldHandle);
+                }
+
+                $occurrenceService->saveRecurringOccurrences(
+                    $element,
+                    $this->fieldHandle,
+                    $this->onlyFutureOccurrences
+                );
             } catch (InvalidFieldException $e) {
                 // Field doesn't exists
             }

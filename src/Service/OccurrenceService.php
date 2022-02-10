@@ -115,14 +115,51 @@ class OccurrenceService extends Component
     }
 
     /**
-     * Creates all occurrences
+     * Saves the first occurrences for an element
+     *
+     * @param ElementInterface $element
+     * @param string $fieldHandle
+     * @return void
+     */
+    public function saveFirstOccurrence(ElementInterface $element, string $fieldHandle)
+    {
+        /** @var RecurringDateElementQuery */
+        $query = $element->getFieldValue($fieldHandle);
+
+        foreach ($query->all() as $recurringDate) {
+            $firstOccurrence = OccurrenceRecord::findOne([
+                'dateId' => $recurringDate->id,
+                'elementId' => $recurringDate->getOwner()->id,
+                'siteId' => $recurringDate->getOwner()->siteId,
+                'fieldId' => $recurringDate->fieldId,
+                'first' => true,
+            ]);
+
+            if (!$firstOccurrence) {
+                $firstOccurrence = new OccurrenceRecord();
+                $firstOccurrence->dateId = $this->id;
+                $firstOccurrence->elementId = $this->getOwner()->id;
+                $firstOccurrence->siteId = $this->getOwner()->siteId;
+                $firstOccurrence->fieldId = $this->fieldId;
+                $firstOccurrence->first = true;
+            }
+
+            $firstOccurrence->startDate = $this->startDate;
+            $firstOccurrence->endDate = $this->endDate;
+            $firstOccurrence->allDay = $this->allDay;
+            $firstOccurrence->save(false);
+        }
+    }
+
+    /**
+     * Creates all recurring occurrences
      *
      * @param ElementInterface $element
      * @param string $fieldHandle
      * @param bool $onlyFutureOccurrences
      * @return void
      */
-    public function createOccurrences(ElementInterface $element, string $fieldHandle, bool $onlyFutureOccurrences = true)
+    public function saveRecurringOccurrences(ElementInterface $element, string $fieldHandle, bool $onlyFutureOccurrences = true)
     {
         /** @var RecurringDatesField */
         $field = Craft::$app->getFields()->getFieldByHandle($fieldHandle);
@@ -135,7 +172,7 @@ class OccurrenceService extends Component
         foreach ($query->all() as $recurringDate) {
             $occurrences = array_merge(
                 $occurrences,
-                $recurringDate->getOccurrences($onlyFutureOccurrences)
+                $recurringDate->getOccurrences($onlyFutureOccurrences, false)
             );
         }
 
@@ -145,6 +182,7 @@ class OccurrenceService extends Component
                 'fieldId' => $field->id,
                 'elementId' => $element->id,
                 'siteId' => $element->siteId,
+                'first' => false,
             ]);
 
         if ($onlyFutureOccurrences) {
