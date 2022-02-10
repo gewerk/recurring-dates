@@ -137,10 +137,10 @@ class OccurrenceService extends Component
 
             if (!$firstOccurrence) {
                 $firstOccurrence = new OccurrenceRecord();
-                $firstOccurrence->dateId = $this->id;
-                $firstOccurrence->elementId = $this->getOwner()->id;
-                $firstOccurrence->siteId = $this->getOwner()->siteId;
-                $firstOccurrence->fieldId = $this->fieldId;
+                $firstOccurrence->dateId = $recurringDate->id;
+                $firstOccurrence->elementId = $recurringDate->getOwner()->id;
+                $firstOccurrence->siteId = $recurringDate->getOwner()->siteId;
+                $firstOccurrence->fieldId = $recurringDate->fieldId;
                 $firstOccurrence->first = true;
             }
 
