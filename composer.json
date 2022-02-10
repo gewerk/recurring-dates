@@ -2,7 +2,7 @@
   "name": "gewerk/recurring-dates",
   "description": "Datetime field for Craft CMS with multiple and recurring occurrences",
   "type": "craft-plugin",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "proprietary",
   "authors": [
     {
