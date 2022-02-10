@@ -144,9 +144,9 @@ class OccurrenceService extends Component
                 $firstOccurrence->first = true;
             }
 
-            $firstOccurrence->startDate = $this->startDate;
-            $firstOccurrence->endDate = $this->endDate;
-            $firstOccurrence->allDay = $this->allDay;
+            $firstOccurrence->startDate = $recurringDate->startDate;
+            $firstOccurrence->endDate = $recurringDate->endDate;
+            $firstOccurrence->allDay = $recurringDate->allDay;
             $firstOccurrence->save(false);
         }
     }
