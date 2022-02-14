@@ -7,13 +7,11 @@
 
 namespace Gewerk\RecurringDates\Console\Controller;
 
-use Craft;
 use craft\console\Controller;
-use craft\queue\Queue;
-use craft\services\Elements;
-use craft\services\Fields;
-use Gewerk\RecurringDates\Field\RecurringDatesField;
-use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
+use craft\helpers\Console;
+use craft\helpers\Db;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
+use Gewerk\RecurringDates\Plugin;
 use yii\console\ExitCode;
 
 /**
@@ -24,36 +22,61 @@ use yii\console\ExitCode;
 class OccurrencesController extends Controller
 {
     /**
-     * Updates the occurrences for all elements
+     * Regenerates all occurrences
      *
      * @return int
      */
-    public function actionUpdate()
+    public function actionRegenerate()
     {
-        /** @var Queue */
-        $queue = Craft::$app->getQueue();
+        // Drop all occurrences
+        Db::delete(Plugin::OCCURRENCES_TABLE);
 
-        /** @var Elements */
-        $elementsService = Craft::$app->getElements();
-        $elementTypes = $elementsService->getAllElementTypes();
+        // Base query
+        $query = RecurringDateElement::find()
+            ->siteId('*')
+            ->trashed(null)
+            ->anyStatus();
 
-        /** @var Fields */
-        $fieldsService = Craft::$app->getFields();
+        // Total elements
+        $total = (int) $query->count();
+        $pages = (int) ceil($total / 100);
 
-        foreach ($elementTypes as $elementType) {
-            $fields = $fieldsService->getFieldsByElementType($elementType);
+        // Setup progress bar
+        Console::startProgress(0, $total);
 
-            foreach ($fields as $field) {
-                if ($field instanceof RecurringDatesField) {
-                    $queue->push(new CreateOccurrencesJob([
-                        'elementType' => $elementType,
-                        'elementId' => '*',
-                        'siteId' => '*',
-                        'fieldHandle' => $field->handle,
-                    ]));
+        // Start creation
+        $done = 0;
+        for ($i = 0; $i < $pages; $i++) {
+            $elements = $query
+                ->limit(100)
+                ->offset($i * 100)
+                ->all();
+
+            foreach ($elements as $element) {
+                // Save first occurrence
+                Db::insert(Plugin::OCCURRENCES_TABLE, [
+                    'dateId' => $element->id,
+                    'elementId' => $element->getOwner()->id,
+                    'siteId' => $element->getOwner()->siteId,
+                    'fieldId' => $element->fieldId,
+                    'first' => (int) true,
+                    'startDate' => Db::prepareDateForDb($element->startDate),
+                    'endDate' => Db::prepareDateForDb($element->endDate),
+                    'allDay' => (int) $element->allDay,
+                ], false);
+
+                // Save additional occurrences
+                if ($element->rrule) {
+                    Plugin::$plugin->getInstance()->getFieldService()->saveOccurrences($element);
                 }
+
+                $done += 1;
+                Console::updateProgress($done, $total);
             }
         }
+
+        // Finish bar
+        Console::endProgress();
 
         return ExitCode::OK;
     }

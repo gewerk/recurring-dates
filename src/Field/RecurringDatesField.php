@@ -11,6 +11,7 @@ use Craft;
 use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\db\Table;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\Cp;
@@ -27,7 +28,6 @@ use DateTime;
 use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
-use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\DateExclusion;
 use Recurr\Exception as RecurrException;
@@ -367,25 +367,6 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function afterElementSave(ElementInterface $element, bool $isNew)
-    {
-        if ($this->allowRecurring) {
-            $jobsService = Craft::$app->getQueue();
-            $jobsService->push(new CreateOccurrencesJob([
-                'elementType' => get_class($element),
-                'elementId' => $element->id,
-                'siteId' => $element->siteId,
-                'fieldHandle' => $this->handle,
-                'onlyFutureOccurrences' => false,
-            ]));
-        }
-
-        parent::afterElementSave($element, $isNew);
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function modifyElementsQuery(ElementQueryInterface $query, $value)
     {
         /** @var ElementQuery $query */
@@ -423,6 +404,15 @@ class RecurringDatesField extends Field
                 ':fieldId' => $this->id,
             ],
         );
+
+        $query->subQuery->innerJoin(
+            ["elements_{$ns}" => Table::ELEMENTS],
+            "[[elements_{$ns}.id]] = [[occurrences_{$ns}.dateId]]"
+        );
+
+        $query->subQuery->andWhere([
+            "[[elements_{$ns}.dateDeleted]]" => null,
+        ]);
 
         $query->subQuery->addGroupBy('[[elements.id]]');
 

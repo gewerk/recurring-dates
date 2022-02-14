@@ -19,9 +19,8 @@ use DateTime;
 use DateTimeZone;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
-use Gewerk\RecurringDates\Model\OccurrenceModel;
+use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
-use Gewerk\RecurringDates\Record\OccurrenceRecord;
 use yii\base\InvalidConfigException;
 
 /**
@@ -67,10 +66,19 @@ class RecurringDateElementQuery extends ElementQuery
      */
     public $contentTable = null;
 
-    public function getOccurrences(bool $onlyFutureOccurrences = true): array
+    /**
+     * Returns all occurrences
+     *
+     * @param bool $onlyFutureOccurrences
+     * @param bool $includeFirstOccurrence
+     * @return Occurrence
+     */
+    public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
         // Get occurrences
-        $query = OccurrenceRecord::find()
+        $query = (new Query())
+            ->select(['startDate', 'endDate', 'allDay'])
+            ->from(Plugin::OCCURRENCES_TABLE)
             ->where([
                 'fieldId' => $this->fieldId,
                 'elementId' => $this->ownerId,
@@ -85,21 +93,13 @@ class RecurringDateElementQuery extends ElementQuery
             );
         }
 
-        // Convert to models
-        $owner = Craft::$app->getElements()->getElementById($this->ownerId, null, $this->siteId);
-        $occurrences = [];
-        foreach ($query->all() as $record) {
-            /** @var OccurrenceRecord $record */
-            $occurrence = new OccurrenceModel();
-            $occurrence->startDate = $record->startDate;
-            $occurrence->endDate = $record->endDate;
-            $occurrence->allDay = $record->allDay;
-            $occurrence->owner = $owner;
-
-            $occurrences[] = $occurrence;
+        if (!$includeFirstOccurrence) {
+            $query->andWhere(['first' => false]);
         }
 
-        return $occurrences;
+        return array_map(function ($occurrence) {
+            return Occurrence::fromArray($occurrence);
+        }, $query->all());
     }
 
     /**

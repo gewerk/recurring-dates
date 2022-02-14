@@ -21,7 +21,6 @@ use DateTime;
 use DateTimeZone;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
-use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\DateExclusion;
 use Recurr\Rule;
@@ -194,15 +193,6 @@ class MigrateController extends Controller
             // Save calendar entry
             try {
                 $elementsService->saveElement($recurringDate);
-
-                // Push job
-                $queue->push(new CreateOccurrencesJob([
-                    'elementType' => $elementsService->getElementTypeById($calendarizeRecord['ownerId']),
-                    'elementId' => (int) $calendarizeRecord['ownerId'],
-                    'siteId' => (int) $calendarizeRecord['ownerSiteId'],
-                    'fieldHandle' => $targetFieldHandle,
-                    'onlyFutureOccurrences' => false,
-                ]));
             } catch (UnsupportedSiteException $e) {
                 Craft::error("{$calendarizeRecord['id']} missed migration for site {$e->siteId}.", 'recurring-dates');
             }

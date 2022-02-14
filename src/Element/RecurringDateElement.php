@@ -11,21 +11,21 @@ use Craft;
 use craft\base\BlockElementInterface;
 use craft\base\Element;
 use craft\base\ElementInterface;
+use craft\db\Query;
 use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Db;
 use craft\helpers\ElementHelper;
 use DateTime;
+use DateTimeZone;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
-use Gewerk\RecurringDates\Model\OccurrenceModel;
+use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
+use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
-use Gewerk\RecurringDates\Record\OccurrenceRecord;
 use Gewerk\RecurringDates\Record\RecurringDateRecord;
 use JsonSerializable;
 use Recurr\DateExclusion;
 use Recurr\Rule;
-use Recurr\Transformer\ArrayTransformer;
-use Recurr\Transformer\Constraint\AfterConstraint;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 
@@ -246,7 +246,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
                 throw new InvalidConfigException('Recurring Date entry is missing its owner ID');
             }
 
-            if (($this->_owner = Craft::$app->getElements()->getElementById($this->ownerId, null, $this->siteId)) === null) {
+            if (($this->_owner = Craft::$app->getElements()->getElementById($this->ownerId, null, $this->siteId, ['trashed' => null])) === null) {
                 throw new InvalidConfigException("Invalid owner ID: {$this->ownerId}");
             }
         }
@@ -274,57 +274,37 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     }
 
     /**
-     * Returns the first occurrence.
-     *
-     * @return OccurrenceModel
-     */
-    public function getFirstOccurrence(): OccurrenceModel
-    {
-        return new OccurrenceModel([
-            'owner' => $this,
-            'startDate' => $this->startDate,
-            'endDate' => $this->endDate,
-            'allDay' => $this->allDay,
-            'first' => true,
-        ]);
-    }
-
-    /**
      * Get all occurrences
      *
      * @param bool $onlyFutureOccurrences
      * @param bool $includeFirstOccurrence
-     * @return OccurrenceModel[]
+     * @return Occurrence[]
      */
     public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true)
     {
-        $now = new DateTime();
+        $query = (new Query())
+            ->select(['startDate', 'endDate', 'allDay'])
+            ->from(Plugin::OCCURRENCES_TABLE)
+            ->where([
+                'dateId' => $this->id,
+                'siteId' => $this->siteId,
+            ])
+            ->orderBy(['startDate' => 'ASC']);
 
-        /** @var OccurrenceModel[] */
-        $occurrences = [];
-
-        if ($includeFirstOccurrence && (!$onlyFutureOccurrences || $this->endDate > $now)) {
-            $occurrences[] = $this->getFirstOccurrence();
+        if ($onlyFutureOccurrences) {
+            $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
+            $query->andWhere(
+                Db::parseDateParam('startDate', $utcNow, '>=')
+            );
         }
 
-        if ($rrule = $this->getRruleInstance()) {
-            $transformer = new ArrayTransformer();
-            $endDatePlusOne = (clone $this->endDate)->modify('+1 second');
-            $occurrencesAfter = $onlyFutureOccurrences && $this->endDate < $now ? $now : $endDatePlusOne;
-            $constraint = new AfterConstraint($occurrencesAfter, true);
-            $recurrences = $transformer->transform($rrule, $constraint);
-
-            foreach ($recurrences as $recurrence) {
-                $occurrences[] = new OccurrenceModel([
-                    'owner' => $this,
-                    'startDate' => $recurrence->getStart(),
-                    'endDate' => $recurrence->getEnd(),
-                    'allDay' => $this->allDay,
-                ]);
-            }
+        if (!$includeFirstOccurrence) {
+            $query->andWhere(['first' => false]);
         }
 
-        return $occurrences;
+        return array_map(function ($occurrence) {
+            return Occurrence::fromArray($occurrence);
+        }, $query->all());
     }
 
     /**
@@ -360,34 +340,33 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         // Save record
         $record->save(false);
 
-        // Get the occurrence record
-        if (!$isNew) {
-            $occurrenceRecord = OccurrenceRecord::findOne([
-                'dateId' => $this->id,
-                'elementId' => $this->getOwner()->id,
-                'siteId' => $this->getOwner()->siteId,
-                'fieldId' => $this->fieldId,
-                'first' => true,
-            ]);
-
-            if (!$occurrenceRecord) {
-                throw new Exception('First occurrence not found.');
-            }
-        } else {
-            $occurrenceRecord = new OccurrenceRecord();
-            $occurrenceRecord->dateId = $this->id;
-            $occurrenceRecord->elementId = $this->getOwner()->id;
-            $occurrenceRecord->siteId = $this->getOwner()->siteId;
-            $occurrenceRecord->fieldId = $this->fieldId;
-            $occurrenceRecord->first = true;
-        }
-
-        $occurrenceRecord->startDate = $this->startDate;
-        $occurrenceRecord->endDate = $this->endDate;
-        $occurrenceRecord->allDay = $this->allDay;
-
         // Save first occurrence
-        $occurrenceRecord->save(false);
+        Db::upsert(Plugin::OCCURRENCES_TABLE, [
+            'dateId' => $this->id,
+            'elementId' => $this->getOwner()->id,
+            'siteId' => $this->getOwner()->siteId,
+            'fieldId' => $this->fieldId,
+            'first' => (int) true,
+        ], [
+            'startDate' => Db::prepareDateForDb($this->startDate),
+            'endDate' => Db::prepareDateForDb($this->endDate),
+            'allDay' => (int) $this->allDay,
+        ], [], false);
+
+        // Save or delete occurrences
+        if ($this->rrule) {
+            $jobsService = Craft::$app->getQueue();
+            $jobsService->push(new CreateOccurrencesJob([
+                'elementId' => $this->id,
+                'siteId' => $this->siteId,
+            ]));
+        } else {
+            Db::delete(Plugin::OCCURRENCES_TABLE, [
+                'dateId' => $this->id,
+                'siteId' => $this->siteId,
+                'first' => false,
+            ]);
+        }
 
         parent::afterSave($isNew);
     }
@@ -430,6 +409,25 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         }
 
         return $json;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function beforeDelete(): bool
+    {
+        if (!parent::beforeDelete()) {
+            return false;
+        }
+
+        // Update the block record
+        Db::update(Plugin::DATES_TABLE, [
+            'deletedWithOwner' => $this->deletedWithOwner,
+        ], [
+            'id' => $this->id,
+        ], [], false);
+
+        return true;
     }
 
     /**

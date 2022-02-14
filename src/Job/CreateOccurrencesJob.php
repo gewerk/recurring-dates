@@ -8,9 +8,8 @@
 namespace Gewerk\RecurringDates\Job;
 
 use Craft;
-use craft\elements\db\ElementQuery;
-use craft\errors\InvalidFieldException;
 use craft\queue\BaseJob;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
 
 /**
@@ -20,11 +19,6 @@ use Gewerk\RecurringDates\Plugin;
  */
 class CreateOccurrencesJob extends BaseJob
 {
-    /**
-     * @var string|null
-     */
-    public $elementType;
-
     /**
      * @var int|int[]|null
      */
@@ -36,28 +30,11 @@ class CreateOccurrencesJob extends BaseJob
     public $siteId = '*';
 
     /**
-     * @var string
-     */
-    public $fieldHandle;
-
-    /**
-     * @var bool
-     */
-    public $onlyFutureOccurrences = true;
-
-    /**
-     * @var bool
-     */
-    public $includeFirstOccurrence = false;
-
-    /**
      * @inheritdoc
      */
     protected function defaultDescription(): string
     {
-        return Craft::t('recurring-dates', 'Updating occurrences for element #{elementId}', [
-            'elementId' => $this->elementId,
-        ]);
+        return Craft::t('recurring-dates', 'Updating occurrences');
     }
 
     /**
@@ -65,35 +42,18 @@ class CreateOccurrencesJob extends BaseJob
      */
     public function execute($queue)
     {
-        /** @var ElementQuery $query */
-        $query = $this->elementType::find();
-        $elements = $query
-            ->drafts(null)
-            ->provisionalDrafts(null)
+        $fieldService = Plugin::$plugin->getFieldService();
+
+        $elements = RecurringDateElement::find()
             ->id($this->elementId)
             ->siteId($this->siteId)
+            ->trashed(null)
             ->anyStatus()
             ->all();
 
-        $total = count($elements);
-        $occurrenceService = Plugin::$plugin->getOccurrenceService();
-
         foreach ($elements as $i => $element) {
-            $this->setProgress($queue, ($i + 1) / $total);
-
-            try {
-                if ($this->includeFirstOccurrence) {
-                    $occurrenceService->saveFirstOccurrence($element, $this->fieldHandle);
-                }
-
-                $occurrenceService->saveRecurringOccurrences(
-                    $element,
-                    $this->fieldHandle,
-                    $this->onlyFutureOccurrences
-                );
-            } catch (InvalidFieldException $e) {
-                // Field doesn't exists
-            }
+            $this->setProgress($queue, ($i + 1) / count($elements));
+            $fieldService->saveOccurrences($element);
         }
     }
 }

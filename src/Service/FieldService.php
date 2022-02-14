@@ -10,12 +10,16 @@ namespace Gewerk\RecurringDates\Service;
 use Craft;
 use craft\base\Component;
 use craft\base\ElementInterface;
+use craft\db\Query;
+use craft\helpers\ArrayHelper;
 use craft\helpers\Db;
 use craft\helpers\ElementHelper;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Plugin;
+use Recurr\Transformer\ArrayTransformer;
+use Recurr\Transformer\Constraint\BetweenConstraint;
 use Throwable;
 
 /**
@@ -28,7 +32,7 @@ class FieldService extends Component
     /**
      * Saves a recurring date field
      *
-     * @param MatrixField $field
+     * @param RecurringDatesField $field
      * @param ElementInterface $owner
      */
     public function saveElements(RecurringDatesField $field, ElementInterface $owner)
@@ -232,5 +236,114 @@ class FieldService extends Component
         foreach ($elementsToDelete as $elementToDelete) {
             $elementsService->deleteElement($elementToDelete);
         }
+    }
+
+    /**
+     * Saves occurrences for an recurring date.
+     *
+     * @param RecurringDateElement $element
+     * @return void
+     */
+    public function saveOccurrences(RecurringDateElement $element)
+    {
+        $occurrences = $this->generateOccurrences($element);
+        $savedOccurrences = (new Query())
+            ->from(Plugin::OCCURRENCES_TABLE)
+            ->where([
+                'dateId' => $element->id,
+                'siteId' => $element->siteId,
+                'first' => false,
+            ])
+            ->all();
+
+        // Remove occurrences that are already saved
+        $unsavedOccurrences = [];
+        foreach ($occurrences as $index => $occurrence) {
+            $matches = ArrayHelper::whereMultiple($savedOccurrences, [
+                'startDate' => Db::prepareDateForDb($occurrence['startDate']),
+                'endDate' => Db::prepareDateForDb($occurrence['endDate']),
+                'allDay' => (int) $occurrence['allDay'],
+            ]);
+
+            if (count($matches) > 0) {
+                unset($occurrences[$index]);
+
+                $keys = array_keys($matches);
+                unset($savedOccurrences[$keys[0]]);
+            } else {
+                $unsavedOccurrences[] = [
+                    'dateId' => $element->id,
+                    'elementId' => $element->ownerId,
+                    'siteId' => $element->siteId,
+                    'fieldId' => $element->fieldId,
+                    'startDate' => Db::prepareDateForDb($occurrence['startDate']),
+                    'endDate' => Db::prepareDateForDb($occurrence['endDate']),
+                    'allDay' => (int) $occurrence['allDay'],
+                ];
+            }
+        }
+
+        $transaction = Craft::$app->getDb()->beginTransaction();
+
+        try {
+            // Remove no more needed occurrences
+            if (count($savedOccurrences) > 0) {
+                Db::delete(
+                    Plugin::OCCURRENCES_TABLE,
+                    [
+                        'dateId' => ArrayHelper::getColumn($savedOccurrences, 'dateId'),
+                        'elementId' => ArrayHelper::getColumn($savedOccurrences, 'elementId'),
+                        'siteId' => ArrayHelper::getColumn($savedOccurrences, 'siteId'),
+                        'fieldId' => ArrayHelper::getColumn($savedOccurrences, 'fieldId'),
+                        'startDate' => ArrayHelper::getColumn($savedOccurrences, 'startDate'),
+                        'endDate' => ArrayHelper::getColumn($savedOccurrences, 'endDate'),
+                        'allDay' => ArrayHelper::getColumn($savedOccurrences, 'allDay'),
+                    ]
+                );
+            }
+
+            // Batch insert missing occurrences
+            Db::batchInsert(
+                Plugin::OCCURRENCES_TABLE,
+                ['dateId', 'elementId', 'siteId', 'fieldId', 'startDate', 'endDate', 'allDay'],
+                array_map('array_values', $unsavedOccurrences),
+                false
+            );
+
+            $transaction->commit();
+        } catch (Throwable $e) {
+            $transaction->rollBack();
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Generates occurrences
+     *
+     * @param RecurringDateElement $element
+     * @return array
+     */
+    private function generateOccurrences(RecurringDateElement $element)
+    {
+        $occurrences = [];
+
+        if ($rrule = $element->getRruleInstance()) {
+            $transformer = new ArrayTransformer();
+            $after = (clone $element->endDate)->modify('+1 second');
+            $before = (clone $after)->modify('+3 years');
+            $constraint = new BetweenConstraint($after, $before, true);
+            $recurrences = $transformer->transform($rrule, $constraint);
+
+            foreach ($recurrences as $recurrence) {
+                $occurrences[] = [
+                    'startDate' => $recurrence->getStart(),
+                    'endDate' => $recurrence->getEnd(),
+                    'allDay' => $element->allDay,
+                ];
+            }
+        }
+
+        return $occurrences;
     }
 }

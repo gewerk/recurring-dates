@@ -8,9 +8,13 @@
 namespace Gewerk\RecurringDates\Behavior;
 
 use craft\base\Element;
-use Gewerk\RecurringDates\Model\OccurrenceModel;
+use craft\db\Query;
+use craft\db\Table;
+use craft\helpers\Db;
+use DateTime;
+use DateTimeZone;
+use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
-use Gewerk\RecurringDates\Service\OccurrenceService;
 use yii\base\Behavior;
 
 /**
@@ -21,29 +25,24 @@ use yii\base\Behavior;
  */
 class ElementBehavior extends Behavior
 {
-    /** @var OccurrenceService */
-    private $_occurrenceService;
-
-    /**
-     * @inheritdoc
-     */
-    public function init()
-    {
-        parent::init();
-
-        $this->_occurrenceService = Plugin::$plugin->getOccurrenceService();
-    }
-
     /**
      * Returns the next occurrence for a field
      *
      * @param string $fieldHandle
-     * @return OccurrenceModel|null
+     * @return Occurrence|null
      */
     public function getNextOccurrence(string $fieldHandle)
     {
         if ($field = $this->owner->getFieldLayout()->getFieldByHandle($fieldHandle)) {
-            return $this->_occurrenceService->getNextOccurrence($this->owner, $field);
+            $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
+            $occurrence = $this->getBaseQuery($field->id)
+                ->andWhere(Db::parseDateParam('startDate', $utcNow, '>='))
+                ->orderBy(['startDate' => 'ASC'])
+                ->one();
+
+            if ($occurrence) {
+                return Occurrence::fromArray($occurrence);
+            }
         }
 
         return null;
@@ -53,12 +52,22 @@ class ElementBehavior extends Behavior
      * Returns the next or the last occurrence for a field
      *
      * @param string $fieldHandle
-     * @return OccurrenceModel|null
+     * @return Occurrence|null
      */
     public function getNextOrLastOccurrence(string $fieldHandle)
     {
+        if ($occurrence = $this->getNextOccurrence($fieldHandle)) {
+            return $occurrence;
+        }
+
         if ($field = $this->owner->getFieldLayout()->getFieldByHandle($fieldHandle)) {
-            return $this->_occurrenceService->getNextOrLastOccurrence($this->owner, $field);
+            $occurrence = $this->getBaseQuery($field->id)
+                ->orderBy(['startDate' => 'DESC'])
+                ->one();
+
+            if ($occurrence) {
+                return Occurrence::fromArray($occurrence);
+            }
         }
 
         return null;
@@ -68,14 +77,49 @@ class ElementBehavior extends Behavior
      * Returns all occurrences for a field
      *
      * @param string $fieldHandle
-     * @return OccurrenceModel[]
+     * @return Occurrence[]
      */
     public function getOccurrences(string $fieldHandle, bool $onlyFutureOccurrences = true)
     {
         if ($field = $this->owner->getFieldLayout()->getFieldByHandle($fieldHandle)) {
-            return $this->_occurrenceService->getOccurrences($this->owner, $field, $onlyFutureOccurrences);
+            $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
+            $query = $this->getBaseQuery($field->id)->orderBy(['startDate' => 'ASC']);
+
+            if ($onlyFutureOccurrences) {
+                $query->andWhere(Db::parseDateParam('startDate', $utcNow, '>='));
+            }
+
+            return array_map(function ($occurrence) {
+                return Occurrence::fromArray($occurrence);
+            }, $query->all());
         }
 
         return [];
+    }
+
+    /**
+     * Generates base query
+     *
+     * @param int $fieldId
+     * @return Query
+     */
+    private function getBaseQuery(int $fieldId): Query
+    {
+        $query = (new Query())
+            ->select([
+                '[[occurrences.startDate]] AS startDate',
+                '[[occurrences.endDate]] AS endDate',
+                '[[occurrences.allDay]] AS allDay',
+            ])
+            ->from(Plugin::OCCURRENCES_TABLE . ' occurrences')
+            ->innerJoin(Table::ELEMENTS, '[[elements.id]] = [[occurrences.dateId]]')
+            ->where([
+                '[[occurrences.elementId]]' => $this->owner->id,
+                '[[occurrences.siteId]]' => $this->owner->siteId,
+                '[[occurrences.fieldId]]' => $fieldId,
+                '[[elements.dateDeleted]]' => null,
+            ]);
+
+        return $query;
     }
 }

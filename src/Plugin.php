@@ -26,7 +26,6 @@ use Gewerk\RecurringDates\Migration\InstallMigration;
 use Gewerk\RecurringDates\Service\IcsService;
 use Gewerk\RecurringDates\Service\FieldService;
 use Gewerk\RecurringDates\Service\FormatService;
-use Gewerk\RecurringDates\Service\OccurrenceService;
 use Gewerk\RecurringDates\Twig\Extension\RecurringDatesTwigExtension;
 use Gewerk\RecurringDates\Twig\Variable\IcsVariable;
 use yii\base\Event;
@@ -54,7 +53,7 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      */
-    public $schemaVersion = '0.4.0';
+    public $schemaVersion = '0.5.0';
 
     /**
      * @var string
@@ -94,7 +93,6 @@ class Plugin extends BasePlugin
         $this->setComponents([
             'field' => FieldService::class,
             'ics' => IcsService::class,
-            'occurrence' => OccurrenceService::class,
             'format' => FormatService::class,
         ]);
 
@@ -148,16 +146,6 @@ class Plugin extends BasePlugin
     public function getIcsService()
     {
         return $this->get('ics');
-    }
-
-    /**
-     * Returns the occurrence service
-     *
-     * @return OccurrenceService
-     */
-    public function getOccurrenceService()
-    {
-        return $this->get('occurrence');
     }
 
     /**

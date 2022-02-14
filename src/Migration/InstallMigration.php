@@ -35,7 +35,7 @@ class InstallMigration extends Migration
             'count' => $this->integer(),
             'untilDate' => $this->dateTime(),
             'sortOrder' => $this->smallInteger(),
-            'deletedWithOwner' => $this->boolean()->defaultValue(false),
+            'deletedWithOwner' => $this->boolean()->null(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
             'uid' => $this->uid(),
@@ -48,7 +48,6 @@ class InstallMigration extends Migration
 
         // Occurrences
         $this->createTable(Plugin::OCCURRENCES_TABLE, [
-            'id' => $this->primaryKey(),
             'dateId' => $this->integer()->notNull(),
             'elementId' => $this->integer()->notNull(),
             'siteId' => $this->integer()->notNull(),
@@ -57,9 +56,6 @@ class InstallMigration extends Migration
             'endDate' => $this->dateTime(),
             'allDay' => $this->boolean()->defaultValue(false),
             'first' => $this->boolean()->defaultValue(false),
-            'dateCreated' => $this->dateTime()->notNull(),
-            'dateUpdated' => $this->dateTime()->notNull(),
-            'uid' => $this->uid(),
         ]);
 
         // Indexes

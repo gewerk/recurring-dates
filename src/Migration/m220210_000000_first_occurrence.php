@@ -31,8 +31,6 @@ class m220210_000000_first_occurrence extends Migration
                 'first',
                 $this->boolean()->defaultValue(false)->after('allDay')
             );
-
-            $this->refreshAllRecurringDates();
         }
     }
 
@@ -42,39 +40,5 @@ class m220210_000000_first_occurrence extends Migration
     public function safeDown()
     {
         return false;
-    }
-
-    /**
-     * Refreshes all recurring dates
-     *
-     * @return void
-     */
-    private function refreshAllRecurringDates()
-    {
-        /** @var Queue */
-        $queue = Craft::$app->getQueue();
-
-        /** @var Elements */
-        $elementsService = Craft::$app->getElements();
-        $elementTypes = $elementsService->getAllElementTypes();
-
-        /** @var Fields */
-        $fieldsService = Craft::$app->getFields();
-
-        foreach ($elementTypes as $elementType) {
-            $fields = $fieldsService->getFieldsByElementType($elementType);
-
-            foreach ($fields as $field) {
-                if ($field instanceof RecurringDatesField) {
-                    $queue->push(new CreateOccurrencesJob([
-                        'elementType' => $elementType,
-                        'elementId' => '*',
-                        'siteId' => '*',
-                        'fieldHandle' => $field->handle,
-                        'includeFirstOccurrence' => true,
-                    ]));
-                }
-            }
-        }
     }
 }
