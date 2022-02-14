@@ -61,6 +61,11 @@ class RecurringDatesField extends Field
     public $static = false;
 
     /**
+     * @var bool Fixed field
+     */
+    private $_fixed = false;
+
+    /**
      * @inheritdoc
      */
     public static function displayName(): string
@@ -186,9 +191,21 @@ class RecurringDatesField extends Field
 
     /**
      * @inheritdoc
+     */
+    public function getStaticHtml($value, ElementInterface $element): string
+    {
+        $this->_fixed = true;
+        $inputHtml = $this->inputHtml($value, $element);
+        $this->_fixed = false;
+
+        return $inputHtml;
+    }
+
+    /**
+     * @inheritdoc
      * @param RecurringDateElementQuery|null $value
      */
-    public function getInputHtml($value, ElementInterface $element = null): string
+    protected function inputHtml($value, ElementInterface $element = null): string
     {
         // Register asset bundle
         /** @var View */
@@ -210,11 +227,12 @@ class RecurringDatesField extends Field
             'max' => $this->max,
             'allowRecurring' => $this->allowRecurring,
             'static' => $this->static,
+            'fixed' => $this->_fixed,
         ];
 
         // Register js
         $id = $view->namespaceInputId($this->handle);
-        $view->registerJs("new Craft.RecurringDates('{$id}');");
+        $view->registerJs("new Craft.RecurringDates('{$id}');", View::POS_END);
 
         // Render field
         return Html::tag('recurring-dates', '', [

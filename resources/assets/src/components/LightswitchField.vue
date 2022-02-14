@@ -4,7 +4,7 @@
       {{ 'Check for {onLabel}.' | t('app', { onLabel: onLabel }) }}
     </span>
     <div class="lightswitch-inner-container">
-      <button ref="lightSwitch" class="lightswitch" type="button" role="checkbox" :id="id" :aria-describedby="'desc' | namespaceInputId(id)">
+      <button :disabled="disabled" ref="lightSwitch" class="lightswitch" v-bind:class="{ disabled: disabled }" type="button" role="checkbox" :id="id" :aria-describedby="'desc' | namespaceInputId(id)">
         <div class="lightswitch-container">
           <div class="handle"></div>
           <input type="hidden" :name="name" :disabled="disabled" />

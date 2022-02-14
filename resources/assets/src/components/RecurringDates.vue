@@ -17,8 +17,8 @@
         <legend class="cdf-date__legend">{{ 'Start & End' | t() }}</legend>
 
         <div class="cdf-date__date-input">
-          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" :value="date.startEnd.start | dateRaw" />
-          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" :value="date.startEnd.end | dateRaw" />
+          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" :value="date.startEnd.start | dateRaw" :disabled="disabled" />
+          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" :value="date.startEnd.end | dateRaw" :disabled="disabled" />
 
           <v-date-picker v-model="date.startEnd" :mode="date.allDay ? 'date' : 'dateTime'" is-range is24hr class="cdf-date__start-end">
             <template v-slot="{ inputValue, inputEvents }">
@@ -30,8 +30,10 @@
                 :id="'start' | namespaceInputId(`${id}-${index}`)"
                 :name="'startEnd[start][formatted]' | namespaceInputName(date.name)"
                 :value="inputValue.start"
-                v-on="inputEvents.start"
+                v-on="disabled ? null : inputEvents.start"
+                :disabled="disabled"
                 class="nicetext text fullwidth cdf-date__input"
+                v-bind:class="{ disabled: disabled }"
               />
 
               <span class="cdf-date__start-end-separator">&ndash;</span>
@@ -44,8 +46,10 @@
                 :id="'end' | namespaceInputId(`${id}-${index}`)"
                 :name="'startEnd[end][formatted]' | namespaceInputName(date.name)"
                 :value="inputValue.end"
-                v-on="inputEvents.end"
+                v-on="disabled ? null : inputEvents.end"
+                :disabled="disabled"
                 class="nicetext text fullwidth cdf-date__input"
+                v-bind:class="{ disabled: disabled }"
               />
             </template>
           </v-date-picker>
@@ -56,6 +60,7 @@
               :name="'allDay' | namespaceInputName(date.name)"
               :onLabel="'All Day' | t()"
               :on="date.allDay"
+              :disabled="disabled"
               v-on:change="date.allDay = $event"
             />
           </div>
@@ -66,6 +71,7 @@
               :name="'recurring' | namespaceInputName(date.name)"
               :onLabel="'Repeat date' | t()"
               :on="date.recurring"
+              :disabled="disabled"
               v-on:change="date.recurring = $event"
             />
           </div>
@@ -82,6 +88,8 @@
               :name="'repeat[frequency]' | namespaceInputName(date.name)"
               :id="'repeat-frequency' | namespaceInputId(`${id}-${index}`)"
               v-model="date.repeat.frequency"
+              :disabled="disabled"
+              v-bind:class="{ disabled: disabled }"
             >
               <option value="YEARLY">{{ 'Yearly' | t() }}</option>
               <option value="MONTHLY">{{ 'Monthly' | t() }}</option>
@@ -96,6 +104,7 @@
               :id="'repeat-settings' | namespaceInputId(`${id}-${index}`)"
               :name="'repeat' | namespaceInputName(date.name)"
               :value="date.repeat"
+              :disabled="disabled"
             />
 
             <monthly
@@ -103,6 +112,7 @@
               :id="'repeat-settings' | namespaceInputId(`${id}-${index}`)"
               :name="'repeat' | namespaceInputName(date.name)"
               :value="date.repeat"
+              :disabled="disabled"
             />
 
             <weekly
@@ -110,6 +120,7 @@
               :id="'repeat-settings' | namespaceInputId(`${id}-${index}`)"
               :name="'repeat' | namespaceInputName(date.name)"
               :value="date.repeat"
+              :disabled="disabled"
             />
 
             <daily
@@ -117,6 +128,7 @@
               :id="'repeat-settings' | namespaceInputId(`${id}-${index}`)"
               :name="'repeat' | namespaceInputName(date.name)"
               :value="date.repeat"
+              :disabled="disabled"
             />
           </div>
         </div>
@@ -131,6 +143,8 @@
                 :name="'repeat[endsAfter]' | namespaceInputName(date.name)"
                 :id="'repeat-ends-after' | namespaceInputId(`${id}-${index}`)"
                 v-model="date.repeat.endsAfter"
+                :disabled="disabled"
+                v-bind:class="{ disabled: disabled }"
               >
                 <option value="never">{{ 'Never' | t() }}</option>
                 <option value="after">{{ 'After' | t() }}</option>
@@ -153,6 +167,8 @@
                     min="1"
                     steps="1"
                     class="nicetext text"
+                    :disabled="disabled"
+                    v-bind:class="{ disabled: disabled }"
                   />
                 </div>
 
@@ -173,6 +189,8 @@
                   :value="inputValue"
                   v-on="inputEvents"
                   class="nicetext text"
+                  :disabled="disabled"
+                  v-bind:class="{ disabled: disabled }"
                 />
               </template>
             </v-date-picker>
@@ -197,14 +215,16 @@
                     :value="inputValue"
                     v-on="inputEvents"
                     class="nicetext text"
+                    :disabled="disabled"
+                    v-bind:class="{ disabled: disabled }"
                   />
                 </template>
               </v-date-picker>
 
-              <button class="btn delete icon" v-on:click="deleteException(date, index, $event)" :title="'Delete exception' | t()"></button>
+              <button class="btn delete icon" v-on:click="deleteException(date, index, $event)" :title="'Delete exception' | t()" v-if="!disabled"></button>
             </div>
 
-            <div class="cdf-date__exception-add">
+            <div class="cdf-date__exception-add" v-if="!disabled">
               <button class="btn add icon" v-on:click="addException(date, $event)">
                 {{ 'Add exception' | t() }}
               </button>
@@ -266,14 +286,21 @@
           max: null,
           allowRecurring: true,
           static: false,
+          fixed: false,
           ...this.settings,
         },
         dates: this.value.map((event) => new EventModel(this.name, event.id, event)),
       }
     },
     computed: {
+      disabled() {
+        return this.settings.fixed;
+      },
+      staticItems() {
+        return this.settings.fixed || this.settings.static;
+      },
       canAdd() {
-        return !this.settings.static || !this.settings.max || this.dates.length < this.settings.max;
+        return !this.settings.fixed || !this.settings.static || !this.settings.max || this.dates.length < this.settings.max;
       },
     },
     created() {

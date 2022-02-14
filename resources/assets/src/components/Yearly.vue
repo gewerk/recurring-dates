@@ -7,7 +7,17 @@
 
       <div class="cdf-yearly__option-input">
         <label class="visually-hidden" :for="'interval' | namespaceInputId(id)">{{ 'Repeat interval' | t() }}</label>
-        <input class="nicetext text" type="number" min="1" steps="1" :name="'interval' | namespaceInputName(name)" v-model="value.interval" :id="'interval' | namespaceInputId(id)" />
+        <input
+          class="nicetext text"
+          type="number"
+          min="1"
+          steps="1"
+          :name="'interval' | namespaceInputName(name)"
+          v-model="value.interval"
+          :id="'interval' | namespaceInputId(id)"
+          :disabled="disabled"
+          v-bind:class="{ disabled: disabled }"
+        />
       </div>
 
       <div class="cdf-yearly__option-seperator">{{ 'years(s)' | t() }}</div>
@@ -16,7 +26,15 @@
     <div class="cdf-yearly__option">
       <div class="cdf-yearly__option-radio">
         <label class="visually-hidden" :for="'mode-same-day' | namespaceInputId(id)">{{ 'Repeat yearly on' | t() }}</label>
-        <input type="radio" :name="'mode' | namespaceInputName(name)" value="sameDay" v-model="mode" :id="'mode-same-day' | namespaceInputId(id)" />
+        <input
+          type="radio"
+          :name="'mode' | namespaceInputName(name)"
+          value="sameDay"
+          v-model="mode"
+          :id="'mode-same-day' | namespaceInputId(id)"
+          :disabled="disabled"
+          v-bind:class="{ disabled: disabled }"
+        />
       </div>
 
       <div class="cdf-yearly__option-seperator">{{ 'on the same day' | t() }}</div>
@@ -25,7 +43,15 @@
     <div class="cdf-yearly__option">
       <div class="cdf-yearly__option-radio">
         <label class="visually-hidden" :for="'mode-on' | namespaceInputId(id)">{{ 'Repeat yearly on' | t() }}</label>
-        <input type="radio" :name="'mode' | namespaceInputName(name)" value="on" v-model="mode" :id="'mode-on' | namespaceInputId(id)" />
+        <input
+          type="radio"
+          :name="'mode' | namespaceInputName(name)"
+          value="on"
+          v-model="mode"
+          :id="'mode-on' | namespaceInputId(id)"
+          :disabled="disabled"
+          v-bind:class="{ disabled: disabled }"
+        />
       </div>
 
       <div class="cdf-yearly__option-seperator">{{ 'on' | t() }}</div>
@@ -33,7 +59,7 @@
       <div class="cdf-yearly__option-inputs cdf-yearly__option-inputs--flex">
         <div class="cdf-yearly__option-input" v-bind:class="{ 'cdf-yearly__option-input--disabled': mode !== 'on' }">
           <option-buttons
-            :disabled="mode !== 'on'"
+            :disabled="disabled || mode !== 'on'"
             :id="'month' | namespaceInputId(id)"
             :name="'month' | namespaceInputName(name)"
             :value="value.month || []"
@@ -46,7 +72,7 @@
 
         <div class="cdf-yearly__option-input" v-bind:class="{ 'cdf-yearly__option-input--disabled': mode !== 'on' }">
           <option-buttons
-            :disabled="mode !== 'on'"
+            :disabled="disabled || mode !== 'on'"
             :id="'month-day' | namespaceInputId(id)"
             :name="'monthDay' | namespaceInputName(name)"
             :value="value.monthDay || []"
@@ -61,7 +87,15 @@
     <div class="cdf-yearly__option">
       <div class="cdf-yearly__option-radio">
         <label class="visually-hidden" :for="'mode-on-the' | namespaceInputId(id)">{{ 'Repeat yearly on the' | t() }}</label>
-        <input type="radio" :name="'mode' | namespaceInputName(name)" value="onThe" v-model="mode" :id="'mode-on-the' | namespaceInputId(id)" />
+        <input
+          type="radio"
+          :name="'mode' | namespaceInputName(name)"
+          value="onThe"
+          v-model="mode"
+          :id="'mode-on-the' | namespaceInputId(id)"
+          :disabled="disabled"
+          v-bind:class="{ disabled: disabled }"
+        />
       </div>
 
       <div class="cdf-yearly__option-seperator">{{ 'on the' | t() }}</div>
@@ -69,7 +103,7 @@
       <div class="cdf-yearly__option-inputs">
         <div class="cdf-yearly__option-input" v-bind:class="{ 'cdf-yearly__option-input--disabled': mode !== 'onThe' }">
           <option-buttons
-            :disabled="mode !== 'onThe'"
+            :disabled="disabled || mode !== 'onThe'"
             :id="'position' | namespaceInputId(id)"
             :name="'position' | namespaceInputName(name)"
             :value="value.position || []"
@@ -79,7 +113,7 @@
 
         <div class="cdf-yearly__option-input" v-bind:class="{ 'cdf-yearly__option-input--disabled': mode !== 'onThe' }">
           <option-buttons
-            :disabled="mode !== 'onThe'"
+            :disabled="disabled || mode !== 'onThe'"
             :id="'day' | namespaceInputId(id)"
             :name="'day' | namespaceInputName(name)"
             :value="value.day || []"
@@ -91,7 +125,7 @@
 
         <div class="cdf-yearly__option-input" v-bind:class="{ 'cdf-yearly__option-input--disabled': mode !== 'onThe' }">
           <option-buttons
-            :disabled="mode !== 'onThe'"
+            :disabled="disabled || mode !== 'onThe'"
             :id="'month' | namespaceInputId(id)"
             :name="'month' | namespaceInputName(name)"
             :value="value.month || []"
@@ -128,6 +162,10 @@
       },
       value: {
         type: Object,
+      },
+      disabled: {
+        type: Boolean,
+        default: false,
       },
     },
     data() {
