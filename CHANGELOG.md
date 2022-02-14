@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 - 2022-02-14
+
+* New: Support for revision views
+* Update translations
+* Refactor generation of occurrences
+
 ## 0.4.2 - 2022-02-10
 
 * Fix: Wrong mapping for first occurrence
