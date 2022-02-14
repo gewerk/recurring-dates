@@ -14,7 +14,7 @@ return [
     'Static fields the number of dates can not be changed (the add/remove buttons are disabled)' => 'Die Anzahl der Termine können bei statische Felder nicht verändert werden (Hinzufügen/Entfernen-Knöpfe sind deaktiviert)',
     '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.' => '{attribute} sollte mindestens {min, number} {min, plural, one{Termin} other{Termine}} enthalten.',
     '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.' => '{attribute} darf nicht mehr als {max, number} {max, plural, one{Termin} other{Termine}} enthalten.',
-    'Updating occurrences for element #{elementId}' => 'Aktualisieren von Termin-Vorkommen für Element #{elementId}',
+    'Updating occurrences' => 'Aktualisieren von Termin-Vorkommen',
     'Repeat daily' => 'Täglich wiederholen',
     'every' => 'alle',
     'Repeat interval' => 'Wiederholungsinterval',
