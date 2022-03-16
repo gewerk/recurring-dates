@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - 2022-03-16
+
+* Fix: Make sure all occurrences deleted after saving
+
 ## 0.5.0 - 2022-02-14
 
 * New: Support for revision views
