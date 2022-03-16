@@ -340,32 +340,31 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         // Save record
         $record->save(false);
 
-        // Save first occurrence
-        Db::upsert(Plugin::OCCURRENCES_TABLE, [
+        // Delete occurrences
+        Db::delete(Plugin::OCCURRENCES_TABLE, [
+            'dateId' => $this->id,
+            'siteId' => $this->siteId,
+        ]);
+
+        // Save new first occurrence
+        Db::insert(Plugin::OCCURRENCES_TABLE, [
             'dateId' => $this->id,
             'elementId' => $this->getOwner()->id,
             'siteId' => $this->getOwner()->siteId,
             'fieldId' => $this->fieldId,
             'first' => (int) true,
-        ], [
             'startDate' => Db::prepareDateForDb($this->startDate),
             'endDate' => Db::prepareDateForDb($this->endDate),
             'allDay' => (int) $this->allDay,
-        ], [], false);
+        ], false);
 
-        // Save or delete occurrences
+        // Create recurring occurrences in the background
         if ($this->rrule) {
             $jobsService = Craft::$app->getQueue();
             $jobsService->push(new CreateOccurrencesJob([
                 'elementId' => $this->id,
                 'siteId' => $this->siteId,
             ]));
-        } else {
-            Db::delete(Plugin::OCCURRENCES_TABLE, [
-                'dateId' => $this->id,
-                'siteId' => $this->siteId,
-                'first' => false,
-            ]);
         }
 
         parent::afterSave($isNew);
