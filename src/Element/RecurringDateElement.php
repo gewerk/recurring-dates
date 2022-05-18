@@ -19,7 +19,6 @@ use craft\helpers\ElementHelper;
 use DateTime;
 use DateTimeZone;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
-use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
 use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
 use Gewerk\RecurringDates\Record\RecurringDateRecord;
@@ -358,13 +357,9 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             'allDay' => (int) $this->allDay,
         ], false);
 
-        // Create recurring occurrences in the background
+        // Create recurring occurrences
         if ($this->rrule) {
-            $jobsService = Craft::$app->getQueue();
-            $jobsService->push(new CreateOccurrencesJob([
-                'elementId' => $this->id,
-                'siteId' => $this->siteId,
-            ]));
+            Plugin::$plugin->getFieldService()->saveOccurrences($this);
         }
 
         parent::afterSave($isNew);

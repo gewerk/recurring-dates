@@ -7,10 +7,7 @@
 
 namespace Gewerk\RecurringDates\Migration;
 
-use Craft;
 use craft\db\Migration;
-use Gewerk\RecurringDates\Field\RecurringDatesField;
-use Gewerk\RecurringDates\Job\CreateOccurrencesJob;
 use Gewerk\RecurringDates\Plugin;
 
 /**
