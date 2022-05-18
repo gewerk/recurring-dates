@@ -340,7 +340,7 @@
 </script>
 
 <style lang="scss">
-  @import '~craftcms-sass/mixins';
+  @import '~@craftcms/sass/mixins';
 
   .cdf-date {
     padding-top: 8px;

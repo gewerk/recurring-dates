@@ -39,7 +39,7 @@ class RecurringDatesAssetBundle extends AssetBundle
 
     /** @inheritdoc */
     public $css = [
-        'recurring-dates.css',
+        'css/recurring-dates.css',
     ];
 
     /**

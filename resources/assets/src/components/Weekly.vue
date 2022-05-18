@@ -69,7 +69,7 @@
 </script>
 
 <style lang="scss">
-  @import '~craftcms-sass/mixins';
+  @import '~@craftcms/sass/mixins';
 
   .cdf-weekly__option {
     display: flex;
