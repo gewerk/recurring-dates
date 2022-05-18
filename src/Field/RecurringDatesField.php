@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -63,7 +64,7 @@ class RecurringDatesField extends Field
     /**
      * @var bool Fixed field
      */
-    private $_fixed = false;
+    private $fixed = false;
 
     /**
      * @inheritdoc
@@ -146,7 +147,10 @@ class RecurringDatesField extends Field
                 'id' => 'static',
                 'name' => 'static',
                 'on' => $this->static,
-                'instructions' => Craft::t('recurring-dates', 'Static fields the number of dates can not be changed (the add/remove buttons are disabled)')
+                'instructions' => Craft::t(
+                    'recurring-dates',
+                    'Static fields the number of dates can not be changed (the add/remove buttons are disabled)'
+                ),
             ]);
     }
 
@@ -194,9 +198,9 @@ class RecurringDatesField extends Field
      */
     public function getStaticHtml($value, ElementInterface $element): string
     {
-        $this->_fixed = true;
+        $this->fixed = true;
         $inputHtml = $this->inputHtml($value, $element);
-        $this->_fixed = false;
+        $this->fixed = false;
 
         return $inputHtml;
     }
@@ -227,7 +231,7 @@ class RecurringDatesField extends Field
             'max' => $this->max,
             'allowRecurring' => $this->allowRecurring,
             'static' => $this->static,
-            'fixed' => $this->_fixed,
+            'fixed' => $this->fixed,
         ];
 
         // Register js
@@ -257,8 +261,14 @@ class RecurringDatesField extends Field
                 ArrayValidator::class,
                 'min' => $this->min ?: null,
                 'max' => $this->max ?: null,
-                'tooFew' => Craft::t('recurring-dates', '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.'),
-                'tooMany' => Craft::t('recurring-dates', '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.'),
+                'tooFew' => Craft::t(
+                    'recurring-dates',
+                    '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.'
+                ),
+                'tooMany' => Craft::t(
+                    'recurring-dates',
+                    '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.'
+                ),
                 'skipOnEmpty' => false,
                 'on' => Element::SCENARIO_LIVE,
             ],
@@ -397,9 +407,10 @@ class RecurringDatesField extends Field
 
         // Where field
         $whereField = "[[occurrences_{$ns}.startDate]]";
-        if ($query->withOngoingDates === true ||
-            (is_array($query->withOngoingDates)
-            && in_array($this->handle, $query->withOngoingDates))
+        if (
+            $query->withOngoingDates === true ||
+            (is_array($query->withOngoingDates) &&
+            in_array($this->handle, $query->withOngoingDates))
         ) {
             $whereField = "[[occurrences_{$ns}.endDate]]";
         }
@@ -444,8 +455,10 @@ class RecurringDatesField extends Field
      * @param ElementInterface|null $element
      * @return RecurringDateElementQuery
      */
-    private function populateQuery(RecurringDateElementQuery $query, ElementInterface $element = null): RecurringDateElementQuery
-    {
+    private function populateQuery(
+        RecurringDateElementQuery $query,
+        ElementInterface $element = null
+    ): RecurringDateElementQuery {
         if ($element && $element->id) {
             $query->ownerId = $element->id;
 
@@ -500,14 +513,20 @@ class RecurringDatesField extends Field
         foreach ($newSortOrder as $index => $id) {
             if (isset($newDates[$id])) {
                 $data = $newDates[$id];
-            } elseif (isset(Elements::$duplicatedElementSourceIds[$id]) && isset($newDates[Elements::$duplicatedElementSourceIds[$id]])) {
+            } elseif (
+                isset(Elements::$duplicatedElementSourceIds[$id]) &&
+                isset($newDates[Elements::$duplicatedElementSourceIds[$id]])
+            ) {
                 $data = $newDates[Elements::$duplicatedElementSourceIds[$id]];
             } else {
                 $data = [];
             }
 
-            if (strpos($id, 'new') !== 0 && !isset($existingRecurringDates[$id]) &&
-                isset(Elements::$duplicatedElementIds[$id]) && isset($existingRecurringDates[Elements::$duplicatedElementIds[$id]])) {
+            if (
+                strpos($id, 'new') !== 0 && !isset($existingRecurringDates[$id]) &&
+                isset(Elements::$duplicatedElementIds[$id]) &&
+                isset($existingRecurringDates[Elements::$duplicatedElementIds[$id]])
+            ) {
                 $id = Elements::$duplicatedElementIds[$id];
             }
 

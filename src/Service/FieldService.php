@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -114,7 +115,10 @@ class FieldService extends Component
 
                 if ($target->updatingFromDerivative && $recurringDate->getIsDerivative()) {
                     /** @var RecurringDateElement */
-                    $newRecurringDate = Craft::$app->getElements()->updateCanonicalElement($recurringDate, $newAttributes);
+                    $newRecurringDate = Craft::$app->getElements()->updateCanonicalElement(
+                        $recurringDate,
+                        $newAttributes
+                    );
                 } else {
                     /** @var RecurringDateElement */
                     $newRecurringDate = Craft::$app->getElements()->duplicateElement($recurringDate, $newAttributes);

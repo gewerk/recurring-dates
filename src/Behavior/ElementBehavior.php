@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -19,10 +20,10 @@ use Eluceo\iCal\Property\ValueInterface;
 class Event extends BaseClass
 {
     /** @var Property[] */
-    private $_properties = [];
+    private $properties = [];
 
     /** @var ValueInterface[] */
-    private $_values = [];
+    private $values = [];
 
     /**
      * Adds a property
@@ -32,7 +33,7 @@ class Event extends BaseClass
      */
     public function addProperty(Property $property)
     {
-        $this->_properties[] = $property;
+        $this->properties[] = $property;
     }
 
     /**
@@ -43,7 +44,7 @@ class Event extends BaseClass
      */
     public function addValue(string $name, ValueInterface $value)
     {
-        $this->_values[$name] = $value;
+        $this->values[$name] = $value;
     }
 
     /**
@@ -53,11 +54,11 @@ class Event extends BaseClass
     {
         $propertyBag = parent::buildPropertyBag();
 
-        foreach ($this->_properties as $property) {
+        foreach ($this->properties as $property) {
             $propertyBag->add($property);
         }
 
-        foreach ($this->_values as $name => $value) {
+        foreach ($this->values as $name => $value) {
             $propertyBag->set($name, $value);
         }
 

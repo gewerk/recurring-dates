@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -25,8 +26,15 @@ class IcsService extends Component
     /**
      * @event IcsElementEvent The event is triggered after an ICS event element was created.
      */
-    const EVENT_AFTER_ICS_ELEMENT_CREATE = 'afterIcsElementCreate';
+    public const EVENT_AFTER_ICS_ELEMENT_CREATE = 'afterIcsElementCreate';
 
+    /**
+     * Generates an ICS feed
+     *
+     * @param ElementInterface $element
+     * @param string $fieldHandle
+     * @return string
+     */
     public function generate(ElementInterface $element, string $fieldHandle): string
     {
         // Create calendar

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -84,13 +85,17 @@ class MigrateController extends Controller
         // Resolve source field
         $sourceField = $fieldsService->getFieldByHandle($sourceFieldHandle);
         if (!$sourceField || get_class($sourceField) !== 'unionco\\calendarize\\fields\\CalendarizeField') {
-            throw new InvalidArgumentException("Source field '{$sourceFieldHandle}' doesn't exists or isn't a Calendarize field.");
+            throw new InvalidArgumentException(
+                "Source field '{$sourceFieldHandle}' doesn't exists or isn't a Calendarize field."
+            );
         }
 
         // Resolve target field
         $targetField = $fieldsService->getFieldByHandle($targetFieldHandle);
         if (!$targetField || !($targetField instanceof RecurringDatesField)) {
-            throw new InvalidArgumentException("Source field '{$targetFieldHandle}' doesn't exists or isn't a Calendar Dates Field.");
+            throw new InvalidArgumentException(
+                "Source field '{$targetFieldHandle}' doesn't exists or isn't a Calendar Dates Field."
+            );
         }
 
         // Get calendarize data
@@ -161,7 +166,10 @@ class MigrateController extends Controller
                     $rrule->setUntil($calendarizeRecord['endRepeatDate']);
                 }
 
-                $rrule->setFreq($calendarizeRecord['repeatType'] === 'biweekly' ? 'WEEKLY' : strtoupper($calendarizeRecord['repeatType']));
+                $rrule->setFreq(
+                    $calendarizeRecord['repeatType'] === 'biweekly' ?
+                        'WEEKLY' : strtoupper($calendarizeRecord['repeatType'])
+                );
 
                 if ($rrule->getFreq() === 'WEEKLY') {
                     $rrule->setByDay(array_map(function ($day) use ($weekdays) {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -22,10 +23,10 @@ use OpenPsa\Ranger\Ranger;
 class FormatService extends Component
 {
     /** @var Ranger[] */
-    private $_ranger = [];
+    private $ranger = [];
 
     /** @var int[] */
-    private $_formats = [
+    private $formats = [
         'none' => IntlDateFormatter::NONE,
         'full' => IntlDateFormatter::FULL,
         'long' => IntlDateFormatter::LONG,
@@ -63,11 +64,11 @@ class FormatService extends Component
 
         // Aliases
         if (is_string($dateFormat) && !is_numeric($dateFormat)) {
-            $dateFormat = $this->_formats[$dateFormat] ?: IntlDateFormatter::FULL;
+            $dateFormat = $this->formats[$dateFormat] ?: IntlDateFormatter::FULL;
         }
 
         if (is_string($timeFormat) && !is_numeric($timeFormat)) {
-            $timeFormat = $this->_formats[$timeFormat] ?: IntlDateFormatter::SHORT;
+            $timeFormat = $this->formats[$timeFormat] ?: IntlDateFormatter::SHORT;
         }
 
         // Format
@@ -85,10 +86,10 @@ class FormatService extends Component
      */
     private function getRanger(string $locale): Ranger
     {
-        if (!isset($this->_ranger[$locale])) {
-            $this->_ranger[$locale] = new Ranger($locale);
+        if (!isset($this->ranger[$locale])) {
+            $this->ranger[$locale] = new Ranger($locale);
         }
 
-        return $this->_ranger[$locale];
+        return $this->ranger[$locale];
     }
 }

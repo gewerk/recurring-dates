@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -95,12 +96,12 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     /**
      * @var ElementInterface|null The owner element, or false if [[ownerId]] is invalid
      */
-    private $_owner;
+    private $owner;
 
     /**
      * @var Rule|null
      */
-    private $_rruleInstance = null;
+    private $rruleInstance = null;
 
     /**
      * @inheritdoc
@@ -214,7 +215,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function setRrule(string $rrule = null)
     {
         $this->rrule = $rrule;
-        $this->_rruleInstance = null;
+        $this->rruleInstance = null;
 
         if ($rruleInstance = $this->getRruleInstance()) {
             $this->count = $rruleInstance->getCount();
@@ -232,7 +233,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      */
     public function setOwner(ElementInterface $owner = null)
     {
-        $this->_owner = $owner;
+        $this->owner = $owner;
     }
 
     /**
@@ -240,17 +241,24 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      */
     public function getOwner(): ElementInterface
     {
-        if ($this->_owner === null) {
+        if ($this->owner === null) {
             if ($this->ownerId === null) {
                 throw new InvalidConfigException('Recurring Date entry is missing its owner ID');
             }
 
-            if (($this->_owner = Craft::$app->getElements()->getElementById($this->ownerId, null, $this->siteId, ['trashed' => null])) === null) {
+            $this->owner = Craft::$app->getElements()->getElementById(
+                $this->ownerId,
+                null,
+                $this->siteId,
+                ['trashed' => null]
+            );
+
+            if ($this->owner === null) {
                 throw new InvalidConfigException("Invalid owner ID: {$this->ownerId}");
             }
         }
 
-        return $this->_owner;
+        return $this->owner;
     }
 
     /**
@@ -261,7 +269,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function getRruleInstance(): ?Rule
     {
         if ($this->rrule) {
-            $this->_rruleInstance = new Rule(
+            $this->rruleInstance = new Rule(
                 $this->rrule,
                 $this->startDate,
                 $this->endDate,
@@ -269,7 +277,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             );
         }
 
-        return $this->_rruleInstance;
+        return $this->rruleInstance;
     }
 
     /**
@@ -372,7 +380,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     {
         $json = [
             'id' => (string) $this->id,
-            'allDay' => (boolean) $this->allDay,
+            'allDay' => (bool) $this->allDay,
             'startDate' => $this->startDate ? $this->startDate->format(DateTime::ISO8601) : null,
             'endDate' => $this->endDate ? $this->endDate->format(DateTime::ISO8601) : null,
         ];

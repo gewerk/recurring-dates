@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @link https://gewerk.dev/plugins/recurring-dates
  * @copyright 2021 gewerk, Dennis Morhardt
@@ -40,8 +41,8 @@ class Plugin extends BasePlugin
     /**
      * Database tables
      */
-    const DATES_TABLE = '{{%recurring_dates}}';
-    const OCCURRENCES_TABLE = '{{%recurring_dates_occurrences}}';
+    public const DATES_TABLE = '{{%recurring_dates}}';
+    public const OCCURRENCES_TABLE = '{{%recurring_dates_occurrences}}';
 
     /**
      * Current plugin instance
@@ -58,7 +59,7 @@ class Plugin extends BasePlugin
     /**
      * @var string
      */
-    private $_rootPath;
+    private $rootPath;
 
     /**
      * @inheritdoc
@@ -111,11 +112,11 @@ class Plugin extends BasePlugin
      */
     public function getRootPath()
     {
-        if ($this->_rootPath === null) {
-            $this->_rootPath = dirname(dirname(__FILE__));
+        if ($this->rootPath === null) {
+            $this->rootPath = dirname(dirname(__FILE__));
         }
 
-        return $this->_rootPath;
+        return $this->rootPath;
     }
 
     /**
