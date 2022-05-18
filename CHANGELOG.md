@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+* Use Craft webpack asset pipeline
+* Use PSR-12 code formatting
+* Create occurrences synchronous
+* Catch empty start/end date when element is serialized
+
 ## 0.5.1 - 2022-03-16
 
 * Fix: Make sure all occurrences deleted after saving
