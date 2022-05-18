@@ -378,8 +378,8 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         $json = [
             'id' => (string) $this->id,
             'allDay' => (boolean) $this->allDay,
-            'startDate' => $this->startDate->format(DateTime::ISO8601),
-            'endDate' => $this->endDate->format(DateTime::ISO8601),
+            'startDate' => $this->startDate ? $this->startDate->format(DateTime::ISO8601) : null,
+            'endDate' => $this->endDate ? $this->endDate->format(DateTime::ISO8601) : null,
         ];
 
         if ($rrule = $this->getRruleInstance()) {
