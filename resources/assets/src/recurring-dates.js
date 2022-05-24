@@ -8,7 +8,7 @@ import { namespaceInputId, namespaceInputName } from './helpers';
 Vue.filter('namespaceInputId', namespaceInputId);
 Vue.filter('namespaceInputName', namespaceInputName);
 Vue.filter('t', (text, context = 'recurring-dates', params = []) => Craft.t(context, text, params));
-Vue.filter('dateRaw', (date) => date.toISOString());
+Vue.filter('dateRaw', (date) => date ? date.toISOString() : '');
 
 // Register v-calendar
 Vue.use(VCalendar);

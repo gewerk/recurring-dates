@@ -33,6 +33,8 @@ return [
     'Start & End' => 'Start & Ende',
     'Start' => 'Start',
     'End' => 'Ende',
+    'Start date' => 'Startdatum',
+    'End date' => 'Enddatum',
     'All Day' => 'Ganztätig',
     'Repeat date' => 'Termin wiederholen',
     'Repeat' => 'Wiederholen',

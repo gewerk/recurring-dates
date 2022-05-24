@@ -17,6 +17,7 @@ use craft\elements\db\ElementQueryInterface;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Db;
 use craft\helpers\ElementHelper;
+use craft\validators\DateTimeValidator;
 use DateTime;
 use DateTimeZone;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
@@ -167,6 +168,18 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         $attributes[] = 'startDate';
         $attributes[] = 'endDate';
         $attributes[] = 'untilDate';
+
+        return $attributes;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        $attributes = parent::attributeLabels();
+        $attributes['startDate'] = Craft::t('recurring-dates', 'Start date');
+        $attributes['endDate'] = Craft::t('recurring-dates', 'End date');
 
         return $attributes;
     }
@@ -353,21 +366,24 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             'siteId' => $this->siteId,
         ]);
 
-        // Save new first occurrence
-        Db::insert(Plugin::OCCURRENCES_TABLE, [
-            'dateId' => $this->id,
-            'elementId' => $this->getOwner()->id,
-            'siteId' => $this->getOwner()->siteId,
-            'fieldId' => $this->fieldId,
-            'first' => (int) true,
-            'startDate' => Db::prepareDateForDb($this->startDate),
-            'endDate' => Db::prepareDateForDb($this->endDate),
-            'allDay' => (int) $this->allDay,
-        ], false);
+        // Save occurrences
+        if ($this->startDate instanceof DateTime && $this->endDate instanceof DateTime) {
+            // Save new first occurrence
+            Db::insert(Plugin::OCCURRENCES_TABLE, [
+                'dateId' => $this->id,
+                'elementId' => $this->getOwner()->id,
+                'siteId' => $this->getOwner()->siteId,
+                'fieldId' => $this->fieldId,
+                'first' => (int) true,
+                'startDate' => Db::prepareDateForDb($this->startDate),
+                'endDate' => Db::prepareDateForDb($this->endDate),
+                'allDay' => (int) $this->allDay,
+            ], false);
 
-        // Create recurring occurrences
-        if ($this->rrule) {
-            Plugin::$plugin->getFieldService()->saveOccurrences($this);
+            // Create recurring occurrences
+            if ($this->rrule) {
+                Plugin::$plugin->getFieldService()->saveOccurrences($this);
+            }
         }
 
         parent::afterSave($isNew);
@@ -430,6 +446,37 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         ], [], false);
 
         return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        $rules[] = [
+            ['count'],
+            'number',
+            'integerOnly' => true,
+            'skipOnEmpty' => true,
+            'on' => [self::SCENARIO_DEFAULT, self::SCENARIO_LIVE],
+        ];
+
+        $rules[] = [
+            ['startDate', 'endDate'],
+            'required',
+            'on' => [self::SCENARIO_DEFAULT, self::SCENARIO_LIVE],
+        ];
+
+        $rules[] = [
+            ['startDate', 'endDate', 'untilDate'],
+            DateTimeValidator::class,
+            'on' => [self::SCENARIO_DEFAULT, self::SCENARIO_LIVE],
+            'skipOnEmpty' => true,
+        ];
+
+        return $rules;
     }
 
     /**

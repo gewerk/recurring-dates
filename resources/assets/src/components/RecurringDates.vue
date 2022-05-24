@@ -4,7 +4,10 @@
       <input type="hidden" :name="'sortOrder[]' | namespaceInputName(name)" :value="date.id" />
 
       <div class="cdf-date__toolbar">
-        <span class="cdf-date__toolbar-label">{{ 'Date' | t() }}</span>
+        <span class="cdf-date__toolbar-label" v-bind:class="{ 'cdf-date__toolbar-label--error': date.hasErrors() }">
+          {{ 'Date' | t() }}
+          <span data-icon="alert" :aria-label="'Error'|t()" v-if="date.hasErrors()"></span>
+        </span>
         <button
           v-on:click="remove(date.id, $event)"
           class="delete icon"
@@ -17,8 +20,8 @@
         <legend class="cdf-date__legend">{{ 'Start & End' | t() }}</legend>
 
         <div class="cdf-date__date-input">
-          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" :value="date.startEnd.start | dateRaw" :disabled="disabled" />
-          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" :value="date.startEnd.end | dateRaw" :disabled="disabled" />
+          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" :value="date.startEnd ? (date.startEnd.start | dateRaw) : null" :disabled="disabled" />
+          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" :value="date.startEnd ? (date.startEnd.end | dateRaw) : null" :disabled="disabled" />
 
           <v-date-picker v-model="date.startEnd" :mode="date.allDay ? 'date' : 'dateTime'" is-range is24hr class="cdf-date__start-end">
             <template v-slot="{ inputValue, inputEvents }">
@@ -232,6 +235,12 @@
           </div>
         </fieldset>
       </fieldset>
+
+      <ul class="cdf-date__errors" v-if="date.hasErrors()">
+        <template v-for="errors in date.errors">
+          <li v-for="error in errors">{{ error }}</li>
+        </template>
+      </ul>
     </div>
 
     <div class="cdf-date__add" v-if="!staticItems">
@@ -289,7 +298,7 @@
           fixed: false,
           ...this.settings,
         },
-        dates: this.value.map((event) => new EventModel(this.name, event.id, event)),
+        dates: this.value.map((event) => new EventModel(this.name, event.id, event.fields, event.errors)),
       }
     },
     computed: {
@@ -367,6 +376,10 @@
     margin-bottom: 16px;
   }
 
+  .cdf-date__toolbar-label--error {
+    color: $errorColor;
+  }
+
   .cdf-date__fieldset {
     margin-top: 0;
   }
@@ -429,6 +442,12 @@
 
   .cdf-date__exception {
     margin-bottom: 8px;
+  }
+
+  .cdf-date__errors {
+    color: $errorColor;
+    list-style-type: square;
+    padding-left: 20px;
   }
 
   .cdf-date__add {

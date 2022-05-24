@@ -225,6 +225,16 @@ class RecurringDatesField extends Field
             $value = $value->getCachedResult() ?? $value->limit(null)->anyStatus()->all();
         }
 
+        // Get dates
+        $dates = [];
+        foreach ($value as $date) {
+            $dates[] = [
+                'id' => (string) $date->id,
+                'errors' => $date->getErrors(),
+                'fields' => $date->jsonSerialize(),
+            ];
+        }
+
         // Get settings
         $settings = [
             'min' => $this->min,
@@ -240,7 +250,7 @@ class RecurringDatesField extends Field
 
         // Render field
         return Html::tag('recurring-dates', '', [
-            ':value' => Json::encode($value, JSON_UNESCAPED_UNICODE),
+            ':value' => Json::encode($dates, JSON_UNESCAPED_UNICODE),
             ':settings' => Json::encode($settings, JSON_UNESCAPED_UNICODE),
             'name' => $this->handle,
             'id' => Html::id($this->handle),
