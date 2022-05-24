@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.6.0
+## 0.6.1 - 2022-05-24
+
+* Fix occurrences without start and end date
+
+## 0.6.0 - 2022-05-18
 
 * Use Craft webpack asset pipeline
 * Use PSR-12 code formatting
