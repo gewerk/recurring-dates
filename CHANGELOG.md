@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 - 2022-05-25
+
+* Fix saving elements
+* Check if datetime exists before normalizing
+
 ## 0.6.1 - 2022-05-24
 
 * Fix occurrences without start and end date
