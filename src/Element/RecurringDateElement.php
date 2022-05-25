@@ -487,8 +487,13 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     private function normalizeTime()
     {
         if ($this->allDay) {
-            $this->startDate->setTime(0, 0, 0);
-            $this->endDate->setTime(23, 59, 59);
+            if ($this->startDate instanceof DateTime) {
+                $this->startDate->setTime(0, 0, 0);
+            }
+
+            if ($this->endDate instanceof DateTime) {
+                $this->endDate->setTime(23, 59, 59);
+            }
         }
     }
 }
