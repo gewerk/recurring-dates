@@ -557,20 +557,24 @@ class RecurringDatesField extends Field
             if (isset($data['startEnd'])) {
                 if ($data['startEnd']['start'] instanceof DateTime) {
                     $recurringDate->startDate = clone $data['startEnd']['start'];
-                } else {
+                } elseif (isset($data['startEnd']['start']['raw'])) {
                     $recurringDate->startDate = DateTimeHelper::toDateTime($data['startEnd']['start']['raw']);
+                } else {
+                    $recurringDate->startDate = null;
                 }
 
                 if ($data['startEnd']['end'] instanceof DateTime) {
                     $recurringDate->endDate = clone $data['startEnd']['end'];
-                } else {
+                } elseif (isset($data['startEnd']['end']['raw'])) {
                     $recurringDate->endDate = DateTimeHelper::toDateTime($data['startEnd']['end']['raw']);
+                } else {
+                    $recurringDate->endDate = null;
                 }
             }
 
             // Set all day
             if (isset($data['allDay'])) {
-                $recurringDate->allDay = (bool) $data['allDay'];
+                $recurringDate->setAllDay((bool) $data['allDay']);
             }
 
             // Is event recurring

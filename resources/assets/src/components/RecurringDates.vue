@@ -20,8 +20,8 @@
         <legend class="cdf-date__legend">{{ 'Start & End' | t() }}</legend>
 
         <div class="cdf-date__date-input">
-          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" :value="date.startEnd ? (date.startEnd.start | dateRaw) : null" :disabled="disabled" />
-          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" :value="date.startEnd ? (date.startEnd.end | dateRaw) : null" :disabled="disabled" />
+          <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" v-if="date.startEnd" :value="date.startEnd.start | dateRaw" :disabled="disabled" />
+          <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" v-if="date.startEnd" :value="date.startEnd.end | dateRaw" :disabled="disabled" />
 
           <v-date-picker v-model="date.startEnd" :mode="date.allDay ? 'date' : 'dateTime'" is-range is24hr class="cdf-date__start-end">
             <template v-slot="{ inputValue, inputEvents }">
