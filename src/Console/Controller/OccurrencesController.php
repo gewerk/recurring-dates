@@ -54,6 +54,8 @@ class OccurrencesController extends Controller
                 ->all();
 
             foreach ($elements as $element) {
+                /** @var RecurringDateElement $element */
+
                 // Save first occurrence
                 Db::insert(Plugin::OCCURRENCES_TABLE, [
                     'dateId' => $element->id,

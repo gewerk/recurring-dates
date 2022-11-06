@@ -34,8 +34,9 @@ class FieldService extends Component
      *
      * @param RecurringDatesField $field
      * @param ElementInterface $owner
+     * @return void
      */
-    public function saveElements(RecurringDatesField $field, ElementInterface $owner)
+    public function saveElements(RecurringDatesField $field, ElementInterface $owner): void
     {
         /** @var RecurringDateElementQuery $query */
         $query = $owner->getFieldValue($field->handle);
@@ -75,12 +76,17 @@ class FieldService extends Component
     }
 
     /**
+     * Duplicates a RecurringDateElement
+     *
      * @param RecurringDatesField $field
      * @param ElementInterface $source
      * @param ElementInterface $target
      */
-    public function duplicateElements(RecurringDatesField $field, ElementInterface $source, ElementInterface $target)
-    {
+    public function duplicateElements(
+        RecurringDatesField $field,
+        ElementInterface $source,
+        ElementInterface $target,
+    ): void {
         /** @var RecurringDateElementQuery $query */
         $query = $source->getFieldValue($field->handle);
 
@@ -232,9 +238,26 @@ class FieldService extends Component
      * @param RecurringDateElement $element
      * @return void
      */
-    public function saveOccurrences(RecurringDateElement $element)
+    public function saveOccurrences(RecurringDateElement $element): void
     {
-        $occurrences = $this->generateOccurrences($element);
+        $occurrences = [];
+
+        if ($rrule = $element->getRruleInstance()) {
+            $transformer = new ArrayTransformer();
+            $after = (clone $element->endDate)->modify('+1 second');
+            $before = (clone $after)->modify('+3 years');
+            $constraint = new BetweenConstraint($after, $before, true);
+            $recurrences = $transformer->transform($rrule, $constraint);
+
+            foreach ($recurrences as $recurrence) {
+                $occurrences[] = [
+                    'startDate' => $recurrence->getStart(),
+                    'endDate' => $recurrence->getEnd(),
+                    'allDay' => $element->allDay,
+                ];
+            }
+        }
+
         $savedOccurrences = (new Query())
             ->from(Plugin::OCCURRENCES_TABLE)
             ->where([
@@ -293,34 +316,5 @@ class FieldService extends Component
             ['dateId', 'elementId', 'siteId', 'fieldId', 'startDate', 'endDate', 'allDay'],
             array_map('array_values', $unsavedOccurrences)
         );
-    }
-
-    /**
-     * Generates occurrences
-     *
-     * @param RecurringDateElement $element
-     * @return array
-     */
-    private function generateOccurrences(RecurringDateElement $element)
-    {
-        $occurrences = [];
-
-        if ($rrule = $element->getRruleInstance()) {
-            $transformer = new ArrayTransformer();
-            $after = (clone $element->endDate)->modify('+1 second');
-            $before = (clone $after)->modify('+3 years');
-            $constraint = new BetweenConstraint($after, $before, true);
-            $recurrences = $transformer->transform($rrule, $constraint);
-
-            foreach ($recurrences as $recurrence) {
-                $occurrences[] = [
-                    'startDate' => $recurrence->getStart(),
-                    'endDate' => $recurrence->getEnd(),
-                    'allDay' => $element->allDay,
-                ];
-            }
-        }
-
-        return $occurrences;
     }
 }

@@ -30,6 +30,8 @@ use craft\validators\ArrayValidator;
 use craft\web\View;
 use DateTime;
 use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
+use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
@@ -196,7 +198,6 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         $new = 0;
 
         foreach ($value->all() as $recurringDate) {
-            /** @var RecurringDateElement $recurringDate */
             $recurringDateId = $recurringDate->id ?? 'new' . ++$new;
             $serialized[$recurringDateId] = $recurringDate->jsonSerialize();
         }
@@ -271,6 +272,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
     /**
      * @inheritdoc
+     * @return array<int, mixed>
      */
     public function getElementValidationRules(): array
     {
@@ -427,6 +429,8 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                 ->status(null)
                 ->siteId($siteInfo['siteId'])
                 ->ownerId($element->id)
+                ->status(null)
+                ->siteId($siteInfo['siteId'])
                 ->trashed()
                 ->andWhere(['recurring_dates.deletedWithOwner' => true])
                 ->all();
@@ -454,10 +458,16 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
         // Where field
         $whereField = "[[occurrences_{$ns}.startDate]]";
+
+        /** @var ElementQueryBehavior|null $elementQueryBehavior */
+        $elementQueryBehavior = $query->getBehavior('recurring-dates');
+
         if (
-            $query->withOngoingDates === true ||
-            (is_array($query->withOngoingDates) &&
-            in_array($this->handle, $query->withOngoingDates))
+            $elementQueryBehavior && (
+                $elementQueryBehavior->withOngoingDates === true ||
+                (is_array($elementQueryBehavior->withOngoingDates) &&
+                in_array($this->handle, $elementQueryBehavior->withOngoingDates))
+            )
         ) {
             $whereField = "[[occurrences_{$ns}.endDate]]";
         }
@@ -546,7 +556,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     /**
      * Parses the recurring dates from request.
      *
-     * @param array $value
+     * @param mixed[]|array<int, array{dates: mixed[], sortOrder: string[]}> $value
      * @param ElementInterface $element
      * @return RecurringDateElement[]
      */

@@ -45,7 +45,7 @@ class RecurringDatesAssetBundle extends AssetBundle
     /**
      * @inheritdoc
      */
-    public function registerAssetFiles($view)
+    public function registerAssetFiles($view): void
     {
         /** @var View $view */
         parent::registerAssetFiles($view);

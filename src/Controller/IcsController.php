@@ -15,6 +15,11 @@ use Gewerk\RecurringDates\Plugin;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
+/**
+ * Renders events as ICS calender feed
+ *
+ * @package Gewerk\RecurringDates\Controller
+ */
 class IcsController extends Controller
 {
     /**
@@ -30,7 +35,7 @@ class IcsController extends Controller
      * @param string $fieldHandle
      * @return Response
      */
-    public function actionMake(int $elementId, int $siteId, string $fieldHandle)
+    public function actionMake(int $elementId, int $siteId, string $fieldHandle): Response
     {
         /** @var ElementInterface|null */
         $element = Craft::$app->getElements()->getElementById($elementId, null, $siteId);
@@ -50,7 +55,7 @@ class IcsController extends Controller
             [
                 'inline' => false,
                 'mimeType' => 'text/calendar',
-            ]
+            ],
         );
     }
 }

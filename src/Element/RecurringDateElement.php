@@ -34,6 +34,7 @@ use yii\base\InvalidConfigException;
 /**
  * A recurring date element
  *
+ * @property-read bool $isMultiDay
  * @package Gewerk\RecurringDates\Element
  */
 class RecurringDateElement extends Element implements BlockElementInterface, JsonSerializable
@@ -79,9 +80,9 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public ?int $count = null;
 
     /**
-     * @var DateTimeInterface|null
+     * @var DateTime|null
      */
-    public ?DateTimeInterface $untilDate = null;
+    public ?DateTime $untilDate = null;
 
     /**
      * @var bool Whether the block was deleted along with its owner
@@ -140,12 +141,13 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
     /**
      * @inheritdoc
+     * @return int[]
      */
     public function getSupportedSites(): array
     {
         try {
             $owner = $this->getOwner();
-        } catch (InvalidConfigException $e) {
+        } catch (InvalidConfigException) {
             $owner = $this->duplicateOf;
         }
 
@@ -162,6 +164,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
     /**
      * @inheritdoc
+     * @return array<string, string>
      */
     public function attributeLabels(): array
     {
@@ -178,7 +181,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      * @param bool $allDay
      * @return void
      */
-    public function setAllDay(bool $allDay = false)
+    public function setAllDay(bool $allDay = false): void
     {
         $this->allDay = $allDay;
     }
@@ -189,7 +192,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      * @param DateTime|null $startDate
      * @return void
      */
-    public function setStartDate(?DateTime $startDate = null)
+    public function setStartDate(?DateTime $startDate = null): void
     {
         $this->startDate = $startDate;
     }
@@ -200,24 +203,39 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      * @param DateTime|null $endDate
      * @return void
      */
-    public function setEndDate(?DateTime $endDate = null)
+    public function setEndDate(?DateTime $endDate = null): void
     {
         $this->endDate = $endDate;
+    }
+
+    /**
+     * Returns if date is an multi day event
+     *
+     * @return bool
+     */
+    public function getIsMultiDay(): bool
+    {
+        if ($this->startDate && $this->endDate) {
+            return $this->startDate->format('Y-m-d') !== $this->endDate->format('Y-m-d');
+        }
+
+        return false;
     }
 
     /**
      * Sets the rrule
      *
      * @param string|null $rrule
+     * @return void
      */
-    public function setRrule(string $rrule = null)
+    public function setRrule(string $rrule = null): void
     {
         $this->rrule = $rrule;
         $this->rruleInstance = null;
 
         if ($rruleInstance = $this->getRruleInstance()) {
             $this->count = $rruleInstance->getCount();
-            $this->untilDate = $rruleInstance->getUntil();
+            $this->untilDate = DateTime::createFromInterface($rruleInstance->getUntil());
         } else {
             $this->count = null;
             $this->untilDate = null;
@@ -228,8 +246,9 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      * Sets the owner
      *
      * @param ElementInterface|null $owner
+     * @return void
      */
-    public function setOwner(ElementInterface $owner = null)
+    public function setOwner(ElementInterface $owner = null): void
     {
         $this->owner = $owner;
     }
@@ -287,7 +306,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      * @param bool $includeFirstOccurrence
      * @return Occurrence[]
      */
-    public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true)
+    public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
         $query = (new Query())
             ->select(['startDate', 'endDate', 'allDay'])
@@ -309,8 +328,8 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $query->andWhere(['first' => false]);
         }
 
-        return array_map(function($occurrence) {
-            return Occurrence::fromArray($occurrence);
+        return array_map(function ($occurrence) {
+            return new Occurrence($occurrence);
         }, $query->all());
     }
 
@@ -434,6 +453,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
     /**
      * @inheritdoc
+     * @return array<int, mixed>
      */
     protected function defineRules(): array
     {

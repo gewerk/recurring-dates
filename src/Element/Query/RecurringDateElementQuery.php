@@ -105,7 +105,9 @@ class RecurringDateElementQuery extends ElementQuery
             $query->andWhere(['first' => false]);
         }
 
-        return $query;
+        return array_map(function ($occurrence) {
+            return new Occurrence($occurrence);
+        }, $query->all());
     }
 
     /**
@@ -141,10 +143,18 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $fieldId
      */
-    public function field($value)
+    public function field(string|RecurringDatesField|array|null $value): static
     {
         if ($value instanceof RecurringDatesField) {
             $this->fieldId = [$value->id];
+        } elseif (is_string($value)) {
+            $field = Craft::$app->getFields()->getFieldByHandle($value);
+
+            if ($field && $field instanceof RecurringDatesField) {
+                $this->fieldId = [$field->id];
+            } else {
+                $this->fieldId = false;
+            }
         } elseif ($value !== null) {
             $this->fieldId = (new Query())
                 ->select(['id'])
@@ -191,7 +201,7 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $fieldId
      */
-    public function fieldId($value)
+    public function fieldId($value): static
     {
         $this->fieldId = $value;
         return $this;
@@ -229,7 +239,7 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $ownerId
      */
-    public function ownerId($value)
+    public function ownerId($value): static
     {
         $this->ownerId = $value;
         return $this;
@@ -258,7 +268,7 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $ownerId
      */
-    public function owner(ElementInterface $owner)
+    public function owner(ElementInterface $owner): static
     {
         $this->ownerId = [$owner->id];
         $this->siteId = $owner->siteId;
@@ -279,7 +289,7 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $allowOwnerDrafts
      */
-    public function allowOwnerDrafts($value = true)
+    public function allowOwnerDrafts($value = true): static
     {
         $this->allowOwnerDrafts = $value;
         return $this;
@@ -299,7 +309,7 @@ class RecurringDateElementQuery extends ElementQuery
      * @return static self reference
      * @uses $allowOwnerDrafts
      */
-    public function allowOwnerRevisions($value = true)
+    public function allowOwnerRevisions($value = true): static
     {
         $this->allowOwnerRevisions = $value;
         return $this;
@@ -362,19 +372,21 @@ class RecurringDateElementQuery extends ElementQuery
      *
      * @throws QueryAbortedException
      */
-    private function normalizeFieldId()
+    private function normalizeFieldId(): void
     {
-        if ($this->fieldId === null && $this->id) {
-            $this->fieldId = (new Query())
-                ->select(['fieldId'])
-                ->distinct()
-                ->from([Plugin::DATES_TABLE])
-                ->where(Db::parseParam('id', $this->id))
-                ->column() ?: false;
-        }
+        if (isset($this->fieldId)) {
+            if ($this->fieldId === null && $this->id) {
+                $this->fieldId = (new Query())
+                    ->select(['fieldId'])
+                    ->distinct()
+                    ->from([Plugin::DATES_TABLE])
+                    ->where(Db::parseParam('id', $this->id))
+                    ->column() ?: false;
+            }
 
-        if ($this->fieldId === false) {
-            throw new QueryAbortedException();
+            if ($this->fieldId === false) {
+                throw new QueryAbortedException();
+            }
         }
 
         if (empty($this->fieldId)) {
@@ -396,7 +408,7 @@ class RecurringDateElementQuery extends ElementQuery
      *
      * @throws InvalidConfigException
      */
-    private function normalizeOwnerId()
+    private function normalizeOwnerId(): void
     {
         if (empty($this->ownerId)) {
             $this->ownerId = null;
