@@ -9,19 +9,14 @@
 namespace Gewerk\RecurringDates;
 
 use Craft;
-use craft\base\Element;
 use craft\base\Plugin as BasePlugin;
 use craft\db\MigrationManager;
-use craft\elements\db\ElementQuery;
-use craft\events\DefineBehaviorsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\i18n\PhpMessageSource;
 use craft\services\Fields;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
-use Gewerk\RecurringDates\Behavior\ElementBehavior;
-use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Migration\InstallMigration;
 use Gewerk\RecurringDates\Service\FieldService;
@@ -53,7 +48,7 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      */
-    public string $schemaVersion = '0.6.1';
+    public string $schemaVersion = '1.0.0-alpha.1';
 
     /**
      * @var string
@@ -99,7 +94,6 @@ class Plugin extends BasePlugin
         // Register all events
         $this->registerFields();
         $this->registerTemplateRoots();
-        $this->registerBehaviors();
         $this->registerTwigVariables();
     }
 
@@ -206,30 +200,6 @@ class Plugin extends BasePlugin
             View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
             function(RegisterTemplateRootsEvent $event) {
                 $event->roots[$this->id] = $this->getResourcePath() . DIRECTORY_SEPARATOR . 'templates';
-            }
-        );
-    }
-
-    /**
-     * Registers all custom behaviors
-     *
-     * @return void
-     */
-    private function registerBehaviors()
-    {
-        Event::on(
-            ElementQuery::class,
-            ElementQuery::EVENT_DEFINE_BEHAVIORS,
-            function(DefineBehaviorsEvent $event) {
-                $event->behaviors['recurring-dates'] = ElementQueryBehavior::class;
-            }
-        );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_DEFINE_BEHAVIORS,
-            function(DefineBehaviorsEvent $event) {
-                $event->behaviors['recurring-dates'] = ElementBehavior::class;
             }
         );
     }

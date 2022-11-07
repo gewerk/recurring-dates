@@ -63,6 +63,37 @@ class RecurringDateElementQuery extends ElementQuery
     public ?bool $allowOwnerRevisions = null;
 
     /**
+     * @var Occurrence|null
+     */
+    private ?Occurrence $nextOccurrence = null;
+
+    /**
+     * Sets the next occurrence
+     *
+     * @param Occurrence|null $nextOccurrence
+     * @return void
+     */
+    public function setNextOccurrence(?Occurrence $nextOccurrence): void
+    {
+        $this->nextOccurrence = $nextOccurrence;
+    }
+
+    /**
+     * Returns the next (or last if was in the past) occurrence
+     *
+     * @param bool $onlyUpcomingOccurrence Get next occurrence only if it's upcoming
+     * @return Occurrence|null
+     */
+    public function getNextOccurrence(bool $onlyUpcomingOccurrence = false): ?Occurrence
+    {
+        if ($onlyUpcomingOccurrence && $this->nextOccurrence?->isPast) {
+            return null;
+        }
+
+        return $this->nextOccurrence;
+    }
+
+    /**
      * Returns all occurrences
      *
      * @param bool $onlyFutureOccurrences
@@ -91,6 +122,7 @@ class RecurringDateElementQuery extends ElementQuery
                 'fieldId' => $this->fieldId,
                 'elementId' => $this->ownerId,
                 'siteId' => $this->siteId,
+                'deleted' => false,
             ])
             ->orderBy(['startDate' => 'ASC']);
 

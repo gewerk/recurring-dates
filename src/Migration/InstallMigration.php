@@ -57,6 +57,7 @@ class InstallMigration extends Migration
             'endDate' => $this->dateTime(),
             'allDay' => $this->boolean()->defaultValue(false),
             'first' => $this->boolean()->defaultValue(false),
+            'deleted' => $this->boolean()->defaultValue(false),
         ]);
 
         // Indexes

@@ -4,12 +4,15 @@
 
 ### Breaking
 
+* *Breaking*: Removed `withOngoingDates()` from queries, use "Include ongoing occurrences" in field settings
+* *Breaking*: Removed `getNextOccurrence()`, `getNextOrLastOccurrence()` and `getOccurrences()` on `Entry`, access occurrences via field
 * *Breaking*: Moved `date_range` Twig function into variable: `{{ craft.recurringDates.formatRange() }}`
 * *Breaking*: Renamed Twig function for ICS url: `craft.ics.url()` to `craft.recurringDates.icsUrl()`
 * *Breaking*: Renamed Twig function for ICS file: `craft.ics.get()` to `craft.recurringDates.ics()`
 
 ### Added
 
+* Access the next occurrence via field: `$entry->myField->getNextOccurrence()`
 * Next occurrence can be displayed as sortable table column in entries index
 * Add support for date conditions (based on the next occurrence)
 * Create queries in Twig templates: `{{ craft.recurringDates.query({ ownerId: 1 }) }}`
@@ -27,6 +30,11 @@
 
 * Fix transitions deadlocks
 * Use configured Craft CMS system timezone for inputs
+
+### Removed
+
+* `Gewerk\RecurringDates\Behavior\ElementBehavior`
+* `Gewerk\RecurringDates\Behavior\ElementQueryBehavior`
 
 ## 1.0.0-alpha.1 - 2023-11-24
 
