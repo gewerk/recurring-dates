@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Breaking
+
+* *Breaking*: Renamed Twig function for ICS url: `craft.ics.url()` to `craft.recurringDates.icsUrl()`
+* *Breaking*: Renamed Twig function for ICS file: `craft.ics.get()` to `craft.recurringDates.ics()`
+
 ### Added
 
 * Next occurrence can be displayed as sortable table column in entries index

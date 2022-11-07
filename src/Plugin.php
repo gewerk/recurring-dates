@@ -28,7 +28,7 @@ use Gewerk\RecurringDates\Service\FieldService;
 use Gewerk\RecurringDates\Service\FormatService;
 use Gewerk\RecurringDates\Service\IcsService;
 use Gewerk\RecurringDates\Twig\Extension\RecurringDatesTwigExtension;
-use Gewerk\RecurringDates\Twig\Variable\IcsVariable;
+use Gewerk\RecurringDates\Twig\Variable\RecurringDatesVariable;
 use yii\base\Event;
 
 /**
@@ -261,7 +261,7 @@ class Plugin extends BasePlugin
             function(Event $event) {
                 /** @var CraftVariable $variables */
                 $variables = $event->sender;
-                $variables->set('ics', IcsVariable::class);
+                $variables->set('recurringDates', RecurringDatesVariable::class);
             }
         );
     }

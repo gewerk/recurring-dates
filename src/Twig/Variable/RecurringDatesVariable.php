@@ -13,20 +13,20 @@ use craft\helpers\UrlHelper;
 use Gewerk\RecurringDates\Plugin;
 
 /**
- * Adds template functions for ICS generation
+ * Adds shortcuts in templates
  *
  * @package Gewerk\RecurringDates\Twig\Variable
  */
-class IcsVariable
+class RecurringDatesVariable
 {
     /**
-     * Generates a download URL
+     * Generates an URL to ICS calender file
      *
      * @param ElementInterface $element
      * @param string $fieldHandle
      * @return string
      */
-    public function url(ElementInterface $element, string $fieldHandle): string
+    public function icsUrl(ElementInterface $element, string $fieldHandle): string
     {
         return UrlHelper::actionUrl('recurring-dates/ics/make', [
             'elementId' => $element->id,
@@ -36,13 +36,13 @@ class IcsVariable
     }
 
     /**
-     * Generates an iCalendar feed
+     * Generates an ICS feed
      *
      * @param ElementInterface $element
      * @param string $fieldHandle
      * @return string
      */
-    public function get(ElementInterface $element, string $fieldHandle): string
+    public function ics(ElementInterface $element, string $fieldHandle): string
     {
         return Plugin::$plugin->getIcsService()->generate($element, $fieldHandle);
     }
