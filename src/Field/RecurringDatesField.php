@@ -17,6 +17,7 @@ use craft\base\SortableFieldInterface;
 use craft\db\Table;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
+use craft\fields\conditions\DateFieldConditionRule;
 use craft\helpers\Cp;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Db;
@@ -504,6 +505,14 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
             'orderBy' => ["occurrences_{$this->handle}.startDate", 'elements.id'],
             'attribute' => "field:$this->uid",
         ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getElementConditionRuleType(): array|string|null
+    {
+        return DateFieldConditionRule::class;
     }
 
     /**
