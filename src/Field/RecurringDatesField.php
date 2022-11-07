@@ -12,6 +12,8 @@ use Craft;
 use craft\base\Element;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\base\PreviewableFieldInterface;
+use craft\base\SortableFieldInterface;
 use craft\db\Table;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
@@ -30,6 +32,7 @@ use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
+use IntlDateFormatter;
 use Recurr\DateExclusion;
 use Recurr\Exception as RecurrException;
 use Recurr\Rule;
@@ -39,7 +42,7 @@ use Recurr\Rule;
  *
  * @package Gewerk\RecurringDates\Field
  */
-class RecurringDatesField extends Field
+class RecurringDatesField extends Field implements PreviewableFieldInterface, SortableFieldInterface
 {
     /**
      * @var int|null Min dates
@@ -333,6 +336,26 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
+    public function getTableAttributeHtml(mixed $value, ElementInterface $element): string
+    {
+        /** @var RecurringDateElementQuery $value */
+        $occurrence = $value->getOccurrences()[0] ?? null;
+
+        if (!$occurrence) {
+            return '-';
+        }
+
+        return Plugin::$plugin->getFormatService()->dateRange(
+            $occurrence->startDate,
+            $occurrence->endDate,
+            IntlDateFormatter::MEDIUM,
+            $occurrence->allDay ? IntlDateFormatter::NONE : IntlDateFormatter::SHORT,
+        );
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function isValueEmpty(mixed $value, ElementInterface $element): bool
     {
         /** @var RecurringDateElementQuery $value */
@@ -469,6 +492,18 @@ class RecurringDatesField extends Field
         $query->subQuery->addGroupBy('[[elements.id]]');
 
         return;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSortOption(): array
+    {
+        return [
+            'label' => Craft::t('site', $this->name),
+            'orderBy' => ["occurrences_{$this->handle}.startDate", 'elements.id'],
+            'attribute' => "field:$this->uid",
+        ];
     }
 
     /**

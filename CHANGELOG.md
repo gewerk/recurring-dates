@@ -4,6 +4,7 @@
 
 ### Added
 
+* Next occurrence can be displayed as sortable table column in entries index
 * `Gewerk\RecurringDates\Model\Occurrence::$isPast`
 * `Gewerk\RecurringDates\Model\Occurrence::getIsPast()`
 * `Gewerk\RecurringDates\Model\Occurrence::$isUpcoming`
