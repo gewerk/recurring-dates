@@ -14,8 +14,7 @@ use craft\base\ElementInterface;
 use craft\base\Field;
 use craft\base\PreviewableFieldInterface;
 use craft\base\SortableFieldInterface;
-use craft\db\Table;
-use craft\elements\db\ElementQuery;
+use craft\db\Query;
 use craft\elements\db\ElementQueryInterface;
 use craft\fields\conditions\DateFieldConditionRule;
 use craft\helpers\Cp;
@@ -24,16 +23,14 @@ use craft\helpers\Db;
 use craft\helpers\ElementHelper;
 use craft\helpers\Html;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use craft\services\Elements;
 use craft\validators\ArrayValidator;
 use craft\web\View;
 use DateTime;
 use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
-use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
-use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
+use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
 use IntlDateFormatter;
 use Recurr\DateExclusion;
@@ -66,6 +63,11 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
      * @var bool Static
      */
     public bool $static = false;
+
+    /**
+     * @var bool Include ongoing occurrences
+     */
+    public bool $includeOngoing = false;
 
     /**
      * @var bool Fixed field
@@ -157,6 +159,16 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                 'on' => $this->allowRecurring,
             ]) .
             Cp::lightswitchFieldHtml([
+                'label' => Craft::t('recurring-dates', 'Include ongoing occurrences'),
+                'id' => 'include-ongoing',
+                'name' => 'includeOngoing',
+                'on' => $this->includeOngoing,
+                'instructions' => Craft::t(
+                    'recurring-dates',
+                    'Includes ongoing occurrences (start date in the past, future end date) into sorting and filter',
+                ),
+            ]) .
+            Cp::lightswitchFieldHtml([
                 'label' => Craft::t('recurring-dates', 'Make field static'),
                 'id' => 'static',
                 'name' => 'static',
@@ -178,6 +190,16 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         }
 
         $query = $this->populateQuery(RecurringDateElement::find(), $element);
+
+        if (is_string($value) && $rawNextOccurrence = Json::decodeIfJson($value)) {
+            $nextOccurrence = new Occurrence([
+                'startDate' => $rawNextOccurrence[0],
+                'endDate' => $rawNextOccurrence[1],
+                'allDay' => $rawNextOccurrence[2],
+            ]);
+
+            $query->setNextOccurrence($nextOccurrence);
+        }
 
         if ($value === '') {
             $query->setCachedResult([]);
@@ -447,55 +469,56 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
      */
     public function modifyElementsQuery(ElementQueryInterface $query, mixed $value): void
     {
-        /** @var ElementQuery $query */
-        if (!$value) {
-            return;
-        }
-
-        // Prefix handle query
-        $ns = $this->handle . '_' . StringHelper::randomString(5);
-
-        // Where field
-        $whereField = "[[occurrences_{$ns}.startDate]]";
-        if (
-            $query->withOngoingDates === true ||
-            (is_array($query->withOngoingDates) &&
-            in_array($this->handle, $query->withOngoingDates))
-        ) {
-            $whereField = "[[occurrences_{$ns}.endDate]]";
-        }
-
-        // Build query
-        $query->subQuery->addSelect([
-            $this->handle => "[[occurrences_{$ns}.startDate]]",
-        ]);
-
-        $query->subQuery->innerJoin(
-            ["occurrences_{$ns}" => Plugin::OCCURRENCES_TABLE],
-            [
-                'AND',
-                "[[occurrences_{$ns}.fieldId]] = :fieldId",
-                "[[occurrences_{$ns}.elementId]] = [[elements.id]]",
-                "[[occurrences_{$ns}.siteId]] = [[elements_sites.siteId]]",
-                Db::parseDateParam($whereField, $value),
-            ],
-            [
-                ':fieldId' => $this->id,
-            ],
+        // Get current date and time (and seconds set to 59 for better caching)
+        $now = new DateTime();
+        $currentTimeDb = Db::prepareDateForDb(
+            $now->setTime((int) $now->format('H'), (int) $now->format('i'), 59),
         );
 
-        $query->subQuery->innerJoin(
-            ["elements_{$ns}" => Table::ELEMENTS],
-            "[[elements_{$ns}.id]] = [[occurrences_{$ns}.dateId]]"
-        );
-
-        $query->subQuery->andWhere([
-            "[[elements_{$ns}.dateDeleted]]" => null,
+        // Select occurrence as JSON (for sorting and table display)
+        $prefix = "occurrences_{$this->handle}";
+        $jsonArray = "JSON_ARRAY({$prefix}.startDate, {$prefix}.endDate, {$prefix}.allDay)";
+        $query->query->addSelect([
+            $this->handle => "IF({$prefix}.startDate, $jsonArray, NULL)",
         ]);
 
-        $query->subQuery->addGroupBy('[[elements.id]]');
+        // Use start date for filtering, or end date to include ongoing occurrences
+        $compareDate = $this->includeOngoing ? 'endDate' : 'startDate';
 
-        return;
+        // Join occurrences table for every element to try to get next (or last if was in the past) occurrence
+        $baseFromQuery = (new Query())
+            ->select(['startDate', 'endDate', 'allDay', 'elementId', 'siteId'])
+            ->from(Plugin::OCCURRENCES_TABLE)
+            ->where(['fieldId' => $this->id, 'deleted' => false]);
+
+        $joinQuery = (new Query())
+            ->select('*')
+            ->from([
+                'o' => (clone $baseFromQuery)
+                    ->andWhere(['>', $compareDate, $currentTimeDb])
+                    ->union(
+                        (clone $baseFromQuery)->andWhere(['<=', $compareDate, $currentTimeDb]),
+                        true,
+                    ),
+            ])
+            ->groupBy(['o.elementId', 'o.siteId']);
+
+        $query->query->join('LEFT OUTER JOIN', [$prefix => $joinQuery], [
+            'AND',
+            "[[{$prefix}.elementId]] = [[elements.id]]",
+            "[[{$prefix}.siteId]] = [[elements_sites.siteId]]",
+        ]);
+
+        $query->subQuery->join('LEFT OUTER JOIN', [$prefix => $joinQuery], [
+            'AND',
+            "[[{$prefix}.elementId]] = [[elements.id]]",
+            "[[{$prefix}.siteId]] = [[elements_sites.siteId]]",
+        ]);
+
+        // Add filter
+        if ($value) {
+            $query->subQuery->andWhere(Db::parseDateParam("{$prefix}.{$compareDate}", $value));
+        }
     }
 
     /**

@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+* *Breaking*: Removed `withOngoingDates()` from queries, use "Include ongoing occurrences" in field settings
+* *Breaking*: Removed `getNextOccurrence()`, `getNextOrLastOccurrence()` and `getOccurrences()` on `Entry`, access occurrences via field
+
+### Added
+
+* Access the next occurrence via field: `$entry->myField->getNextOccurrence()`
+
+### Removed
+
+* `Gewerk\RecurringDates\Behavior\ElementBehavior`
+* `Gewerk\RecurringDates\Behavior\ElementQueryBehavior`
+
 ## 1.0.0-alpha.3 - 2023-12-05
 
 ### Breaking

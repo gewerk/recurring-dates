@@ -443,12 +443,36 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
 
         // Update the block record
         Db::update(Plugin::DATES_TABLE, [
-            'deletedWithOwner' => $this->deletedWithOwner,
+            'deletedWithOwner' => Db::prepareValueForDb($this->deletedWithOwner),
         ], [
             'id' => $this->id,
         ], [], false);
 
+        // Set occurrences to deleted
+        Db::update(Plugin::OCCURRENCES_TABLE, [
+            'deleted' => true,
+        ], [
+            'dateId' => $this->id,
+            'siteId' => $this->siteId,
+        ], [], false);
+
         return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterRestore(): void
+    {
+        parent::afterRestore();
+
+        // Set occurrences to non-deleted
+        Db::update(Plugin::OCCURRENCES_TABLE, [
+            'deleted' => false,
+        ], [
+            'dateId' => $this->id,
+            'siteId' => $this->siteId,
+        ], [], false);
     }
 
     /**

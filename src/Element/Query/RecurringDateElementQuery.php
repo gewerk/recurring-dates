@@ -63,6 +63,37 @@ class RecurringDateElementQuery extends ElementQuery
     public ?bool $allowOwnerRevisions = null;
 
     /**
+     * @var Occurrence|null
+     */
+    private ?Occurrence $nextOccurrence = null;
+
+    /**
+     * Sets the next occurrence
+     *
+     * @param Occurrence|null $nextOccurrence
+     * @return void
+     */
+    public function setNextOccurrence(?Occurrence $nextOccurrence): void
+    {
+        $this->nextOccurrence = $nextOccurrence;
+    }
+
+    /**
+     * Returns the next (or last if was in the past) occurrence
+     *
+     * @param bool $onlyUpcomingOccurrence Get next occurrence only if it's upcoming
+     * @return Occurrence|null
+     */
+    public function getNextOccurrence(bool $onlyUpcomingOccurrence = false): ?Occurrence
+    {
+        if ($onlyUpcomingOccurrence && $this->nextOccurrence?->isPast) {
+            return null;
+        }
+
+        return $this->nextOccurrence;
+    }
+
+    /**
      * Returns all occurrences
      *
      * @param bool $onlyFutureOccurrences
@@ -83,16 +114,29 @@ class RecurringDateElementQuery extends ElementQuery
      */
     public function occurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
+        // Prepare query
+        $this->normalizeSiteId();
+        $this->normalizeFieldId();
+        $this->normalizeOwnerId();
+
         // Get occurrences
         $query = (new OccurrenceQuery())
             ->select(['startDate', 'endDate', 'allDay'])
             ->from(Plugin::OCCURRENCES_TABLE)
-            ->where([
-                'fieldId' => $this->fieldId,
-                'elementId' => $this->ownerId,
-                'siteId' => $this->siteId,
-            ])
+            ->where(['deleted' => false])
             ->orderBy(['startDate' => 'ASC']);
+
+        if ($this->fieldId) {
+            $query->andWhere(['fieldId' => $this->fieldId]);
+        }
+
+        if ($this->ownerId) {
+            $query->andWhere(['elementId' => $this->ownerId]);
+        }
+
+        if ($this->siteId) {
+            $query->andWhere(['siteId' => $this->siteId]);
+        }
 
         if ($onlyFutureOccurrences) {
             $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
@@ -104,6 +148,9 @@ class RecurringDateElementQuery extends ElementQuery
         if (!$includeFirstOccurrence) {
             $query->andWhere(['first' => false]);
         }
+
+        // Order by startDate
+        $query->orderBy(['startDate' => 'ASC']);
 
         return array_map(function ($occurrence) {
             return new Occurrence($occurrence);
@@ -362,7 +409,7 @@ class RecurringDateElementQuery extends ElementQuery
     /**
      * Normalizes the fieldId param to an array of IDs or null
      *
-     * @throws QueryAbortedException
+     * @return void
      */
     private function normalizeFieldId(): void
     {
@@ -396,7 +443,7 @@ class RecurringDateElementQuery extends ElementQuery
     /**
      * Normalizes the ownerId param to an array of IDs or null
      *
-     * @throws InvalidConfigException
+     * @return void
      */
     private function normalizeOwnerId(): void
     {
@@ -406,6 +453,20 @@ class RecurringDateElementQuery extends ElementQuery
             $this->ownerId = [$this->ownerId];
         } elseif (is_array($this->ownerId) && !ArrayHelper::isNumeric($this->ownerId)) {
             throw new InvalidConfigException('Invalid ownerId param value');
+        }
+    }
+
+    /**
+     * Normalizes the siteId param value
+     *
+     * @return void
+     */
+    private function normalizeSiteId(): void
+    {
+        if (empty($this->siteId)) {
+            $this->siteId = Craft::$app->getSites()->getCurrentSite()->id;
+        } elseif ($this->siteId === '*') {
+            $this->siteId = Craft::$app->getSites()->getAllSiteIds();
         }
     }
 }
