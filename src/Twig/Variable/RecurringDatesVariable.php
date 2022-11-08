@@ -8,8 +8,11 @@
 
 namespace Gewerk\RecurringDates\Twig\Variable;
 
+use Craft;
 use craft\base\ElementInterface;
 use craft\helpers\UrlHelper;
+use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
 
 /**
@@ -19,6 +22,21 @@ use Gewerk\RecurringDates\Plugin;
  */
 class RecurringDatesVariable
 {
+    /**
+     * Returns a new recurring date query
+     *
+     * @param array<string, mixed> $criteria
+     * @return RecurringDateElementQuery
+     */
+    public function query(array $criteria = []): RecurringDateElementQuery
+    {
+        $query = RecurringDateElement::find();
+
+        Craft::configure($query, $criteria);
+
+        return $query;
+    }
+
     /**
      * Generates an URL to ICS calender file
      *
