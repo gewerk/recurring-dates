@@ -11,6 +11,8 @@ namespace Gewerk\RecurringDates\Model;
 use craft\base\Model;
 use craft\helpers\DateTimeHelper;
 use DateTime;
+use Gewerk\RecurringDates\Plugin;
+use IntlDateFormatter;
 
 /**
  * An occurrence of a date
@@ -108,5 +110,43 @@ class Occurrence extends Model
     public function getIsMultiDay(): bool
     {
         return $this->startDate->format('Y-m-d') !== $this->endDate->format('Y-m-d');
+    }
+
+    /**
+     * Formats an occurrence
+     *
+     * @param array{
+     *  dateFormat?: string|int,
+     *  timeFormat?: string|int,
+     *  locale?: string|null,
+     *  rangeSeparator?: string,
+     *  dateTimeSeparator?: string,
+     * } $configuration
+     * @return string
+     */
+    public function format(array $configuration = []): string
+    {
+        $defaults = [
+            'dateFormat' => IntlDateFormatter::FULL,
+            'timeFormat' => $this->isAllDay ? IntlDateFormatter::NONE : IntlDateFormatter::SHORT,
+            'locale' => null,
+            'rangeSeparator' => '–',
+            'dateTimeSeparator' => ', ',
+        ];
+
+        $configuration = array_merge(
+            $defaults,
+            array_intersect_key($configuration, $defaults),
+        );
+
+        return Plugin::$plugin->getFormatService()->dateRange(
+            $this->startDate,
+            $this->endDate,
+            $configuration['dateFormat'],
+            $configuration['timeFormat'],
+            $configuration['locale'],
+            $configuration['rangeSeparator'],
+            $configuration['dateTimeSeparator'],
+        );
     }
 }

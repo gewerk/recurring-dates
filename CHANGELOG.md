@@ -13,6 +13,7 @@
 * Next occurrence can be displayed as sortable table column in entries index
 * Add support for date conditions (based on the next occurrence)
 * Create queries in Twig templates: `{{ craft.recurringDates.query({ ownerId: 1 }) }}`
+* `Gewerk\RecurringDates\Model\Occurrence::format()` to return a date range directly from occurrence
 * `Gewerk\RecurringDates\Model\Occurrence::$isPast`
 * `Gewerk\RecurringDates\Model\Occurrence::getIsPast()`
 * `Gewerk\RecurringDates\Model\Occurrence::$isUpcoming`
