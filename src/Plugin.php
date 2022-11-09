@@ -27,7 +27,6 @@ use Gewerk\RecurringDates\Migration\InstallMigration;
 use Gewerk\RecurringDates\Service\FieldService;
 use Gewerk\RecurringDates\Service\FormatService;
 use Gewerk\RecurringDates\Service\IcsService;
-use Gewerk\RecurringDates\Twig\Extension\RecurringDatesTwigExtension;
 use Gewerk\RecurringDates\Twig\Variable\RecurringDatesVariable;
 use yii\base\Event;
 
@@ -101,7 +100,6 @@ class Plugin extends BasePlugin
         $this->registerFields();
         $this->registerTemplateRoots();
         $this->registerBehaviors();
-        $this->registerTwigExtensions();
         $this->registerTwigVariables();
     }
 
@@ -234,18 +232,6 @@ class Plugin extends BasePlugin
                 $event->behaviors['recurring-dates'] = ElementBehavior::class;
             }
         );
-    }
-
-    /**
-     * Registers all twig extensions
-     *
-     * @return void
-     */
-    private function registerTwigExtensions()
-    {
-        /** @var View */
-        $view = Craft::$app->getView();
-        $view->registerTwigExtension(new RecurringDatesTwigExtension());
     }
 
     /**

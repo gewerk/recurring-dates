@@ -4,6 +4,7 @@
 
 ### Breaking
 
+* *Breaking*: Moved `date_range` Twig function into variable: `{{ craft.recurringDates.formatRange() }}`
 * *Breaking*: Renamed Twig function for ICS url: `craft.ics.url()` to `craft.recurringDates.icsUrl()`
 * *Breaking*: Renamed Twig function for ICS file: `craft.ics.get()` to `craft.recurringDates.ics()`
 

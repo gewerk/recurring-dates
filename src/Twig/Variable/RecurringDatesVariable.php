@@ -64,4 +64,18 @@ class RecurringDatesVariable
     {
         return Plugin::$plugin->getIcsService()->generate($element, $fieldHandle);
     }
+
+    /**
+     * Calls dateRange helper from format service
+     *
+     * @param mixed[] $args
+     * @return string
+     */
+    public function formatRange(...$args): string
+    {
+        return call_user_func_array(
+            [Plugin::$plugin->getFormatService(), 'dateRange'],
+            $args,
+        );
+    }
 }
