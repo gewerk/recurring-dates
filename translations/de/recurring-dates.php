@@ -35,7 +35,7 @@ return [
     'End' => 'Ende',
     'Start date' => 'Startdatum',
     'End date' => 'Enddatum',
-    'All Day' => 'Ganztätig',
+    'All Day' => 'Ganztägig',
     'Repeat date' => 'Termin wiederholen',
     'Repeat' => 'Wiederholen',
     'Yearly' => 'Jährlich',
