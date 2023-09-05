@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3 - 2023-09-05
+
+* Fix for wrong translation
+
 ## 0.6.2 - 2022-05-25
 
 * Fix saving elements
