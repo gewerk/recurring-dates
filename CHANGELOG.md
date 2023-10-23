@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-alpha.0 - 2023-10-23
+
+* Upgrade plugin to Craft CMS 4
+
 ## 0.6.3 - 2023-09-05
 
 * Fix for wrong translation
