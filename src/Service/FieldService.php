@@ -15,8 +15,8 @@ use craft\db\Query;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Db;
 use craft\helpers\ElementHelper;
-use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\Transformer\ArrayTransformer;
@@ -41,13 +41,14 @@ class FieldService extends Component
         /** @var RecurringDateElementQuery $query */
         $query = $owner->getFieldValue($field->handle);
 
-        /** @var RecurringDateElement[] $recurringDates */
         if (($recurringDates = $query->getCachedResult()) !== null) {
             $saveAll = false;
         } else {
-            $recurringDates = (clone $query)->anyStatus()->all();
+            $recurringDates = (clone $query)->status(null)->all();
             $saveAll = true;
         }
+
+        /** @var RecurringDateElement[] $recurringDates */
 
         $ids = [];
         $sortOrder = 0;
@@ -94,10 +95,11 @@ class FieldService extends Component
         /** @var RecurringDateElementQuery $query */
         $query = $source->getFieldValue($field->handle);
 
-        /** @var RecurringDateElement[] $recurringDates */
         if (($recurringDates = $query->getCachedResult()) === null) {
-            $recurringDates = (clone $query)->anyStatus()->all();
+            $recurringDates = (clone $query)->status(null)->all();
         }
+
+        /** @var RecurringDateElement[] $recurringDates */
 
         $ids = [];
 
@@ -153,7 +155,7 @@ class FieldService extends Component
             ->drafts($owner->getIsDraft())
             ->provisionalDrafts($owner->isProvisionalDraft)
             ->revisions($owner->getIsRevision())
-            ->anyStatus()
+            ->status(null)
             ->ignorePlaceholders()
             ->indexBy('siteId')
             ->all();
@@ -164,7 +166,7 @@ class FieldService extends Component
         $canonicalOwners = $owner::find()
             ->id($owner->getCanonicalId())
             ->siteId(array_keys($localizedOwners))
-            ->anyStatus()
+            ->status(null)
             ->ignorePlaceholders()
             ->all();
 
@@ -221,14 +223,17 @@ class FieldService extends Component
     }
 
     /**
+     * Delete other elements
+     *
      * @param RecurringDatesField $field The Matrix field
-     * @param ElementInterface The owner element
+     * @param ElementInterface $owner The owner element
      * @param int[] $except
+     * @return void
      */
-    private function deleteOtherElements(RecurringDatesField $field, ElementInterface $owner, array $except)
+    private function deleteOtherElements(RecurringDatesField $field, ElementInterface $owner, array $except): void
     {
         $elementsToDelete = RecurringDateElement::find()
-            ->anyStatus()
+            ->status(null)
             ->ownerId($owner->id)
             ->fieldId($field->id)
             ->siteId($owner->siteId)
@@ -310,8 +315,7 @@ class FieldService extends Component
             Db::batchInsert(
                 Plugin::OCCURRENCES_TABLE,
                 ['dateId', 'elementId', 'siteId', 'fieldId', 'startDate', 'endDate', 'allDay'],
-                array_map('array_values', $unsavedOccurrences),
-                false
+                array_map('array_values', $unsavedOccurrences)
             );
 
             $transaction->commit();

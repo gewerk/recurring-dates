@@ -19,6 +19,7 @@ use craft\helpers\Db;
 use craft\helpers\ElementHelper;
 use craft\validators\DateTimeValidator;
 use DateTime;
+use DateTimeInterface;
 use DateTimeZone;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Model\Occurrence;
@@ -40,69 +41,69 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     /**
      * @var int|null Field ID
      */
-    public $fieldId;
+    public ?int $fieldId = null;
 
     /**
      * @var int|null Owner ID
      */
-    public $ownerId;
+    public ?int $ownerId = null;
 
     /**
      * @var int|null Sort order
      */
-    public $sortOrder;
+    public ?int $sortOrder = null;
 
     /**
      * @var DateTime|null Starting date
      */
-    public $startDate;
+    public ?DateTime $startDate = null;
 
     /**
      * @var DateTime|null Ending date
      */
-    public $endDate;
+    public ?DateTime $endDate = null;
 
     /**
      * @var bool Is this an all day event
      */
-    public $allDay = false;
+    public bool $allDay = false;
 
     /**
      * @var string|null Recurring rule
      */
-    public $rrule;
+    public ?string $rrule = null;
 
     /**
      * @var int|null
      */
-    public $count;
+    public ?int $count = null;
 
     /**
-     * @var DateTime|null
+     * @var DateTimeInterface|null
      */
-    public $untilDate;
+    public ?DateTimeInterface $untilDate = null;
 
     /**
      * @var bool Whether the block was deleted along with its owner
      * @see beforeDelete()
      */
-    public $deletedWithOwner = false;
+    public bool $deletedWithOwner = false;
 
     /**
      * @var bool Whether the block has changed.
      * @internal
      */
-    public $dirty = false;
+    public bool $dirty = false;
 
     /**
      * @var ElementInterface|null The owner element, or false if [[ownerId]] is invalid
      */
-    private $owner;
+    private ?ElementInterface $owner;
 
     /**
      * @var Rule|null
      */
-    private $rruleInstance = null;
+    private ?Rule $rruleInstance = null;
 
     /**
      * @inheritdoc
@@ -162,20 +163,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     /**
      * @inheritdoc
      */
-    public function datetimeAttributes(): array
-    {
-        $attributes = parent::datetimeAttributes();
-        $attributes[] = 'startDate';
-        $attributes[] = 'endDate';
-        $attributes[] = 'untilDate';
-
-        return $attributes;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         $attributes = parent::attributeLabels();
         $attributes['startDate'] = Craft::t('recurring-dates', 'Start date');
@@ -322,7 +310,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $query->andWhere(['first' => false]);
         }
 
-        return array_map(function ($occurrence) {
+        return array_map(function($occurrence) {
             return Occurrence::fromArray($occurrence);
         }, $query->all());
     }
@@ -330,7 +318,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     /**
      * @inheritdoc
      */
-    public function afterSave(bool $isNew)
+    public function afterSave(bool $isNew): void
     {
         // Get the entry record
         if (!$isNew) {
@@ -378,7 +366,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
                 'startDate' => Db::prepareDateForDb($this->startDate),
                 'endDate' => Db::prepareDateForDb($this->endDate),
                 'allDay' => (int) $this->allDay,
-            ], false);
+            ]);
 
             // Create recurring occurrences
             if ($this->rrule) {
@@ -405,7 +393,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $repeat = [
                 'frequency' => $rrule->getFreqAsText(),
                 'endsAfter' => 'never',
-                'exceptions' => array_map(function (DateExclusion $exDate) {
+                'exceptions' => array_map(function(DateExclusion $exDate) {
                     return $exDate->date->format(DateTime::ISO8601);
                 }, $rrule->getExDates()),
                 'interval' => $rrule->getInterval(),

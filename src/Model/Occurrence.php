@@ -22,17 +22,17 @@ class Occurrence extends Model
     /**
      * @var DateTime
      */
-    public $startDate;
+    public DateTime $startDate;
 
     /**
      * @var DateTime
      */
-    public $endDate;
+    public DateTime $endDate;
 
     /**
      * @var bool
      */
-    public $allDay = false;
+    public bool $allDay = false;
 
     /**
      * Creates an instance from an array
@@ -42,7 +42,7 @@ class Occurrence extends Model
      */
     public static function fromArray(array $occurrence): self
     {
-        return new static([
+        return new self([
             'startDate' => DateTimeHelper::toDateTime($occurrence['startDate']),
             'endDate' => DateTimeHelper::toDateTime($occurrence['endDate']),
             'allDay' => (bool) $occurrence['allDay'],

@@ -8,7 +8,6 @@
 
 namespace Gewerk\RecurringDates\Element\Query;
 
-use Craft;
 use craft\base\ElementInterface;
 use craft\db\Query;
 use craft\db\QueryAbortedException;
@@ -22,6 +21,7 @@ use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Model\Occurrence;
 use Gewerk\RecurringDates\Plugin;
+use Gewerk\RecurringDates\Query\OccurrenceQuery;
 use yii\base\InvalidConfigException;
 
 /**
@@ -35,49 +35,56 @@ class RecurringDateElementQuery extends ElementQuery
     /**
      * @inheritdoc
      */
-    protected $defaultOrderBy = ['recurring_dates.sortOrder' => SORT_ASC];
+    protected array $defaultOrderBy = ['recurring_dates.sortOrder' => SORT_ASC];
 
     /**
      * @var int|int[]|string|false|null The field ID(s) that the resulting dates must belong to.
      * @used-by fieldId()
      */
-    public $fieldId;
+    public int|string|array|false|null $fieldId = null;
 
     /**
      * @var int|int[]|null The owner element ID(s) that the resulting dates must belong to.
      * @used-by owner()
      * @used-by ownerId()
      */
-    public $ownerId;
+    public int|array|null $ownerId = null;
 
     /**
      * @var bool|null Whether the owner elements can be drafts.
      * @used-by allowOwnerDrafts()
      */
-    public $allowOwnerDrafts;
+    public ?bool $allowOwnerDrafts = null;
 
     /**
      * @var bool|null Whether the owner elements can be revisions.
      * @used-by allowOwnerRevisions()
      */
-    public $allowOwnerRevisions;
-
-    /**
-     * @inheritdoc
-     */
-    public $contentTable = null;
+    public ?bool $allowOwnerRevisions = null;
 
     /**
      * Returns all occurrences
      *
      * @param bool $onlyFutureOccurrences
      * @param bool $includeFirstOccurrence
-     * @return Occurrence
+     * @return Occurrence[]
      */
     public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
+        return $this->occurrences($onlyFutureOccurrences, $includeFirstOccurrence)->all();
+    }
+
+    /**
+     * Returns an occurrences query
+     *
+     * @param bool $onlyFutureOccurrences
+     * @param bool $includeFirstOccurrence
+     * @return OccurrenceQuery
+     */
+    public function occurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): OccurrenceQuery
+    {
         // Get occurrences
-        $query = (new Query())
+        $query = (new OccurrenceQuery())
             ->select(['startDate', 'endDate', 'allDay'])
             ->from(Plugin::OCCURRENCES_TABLE)
             ->where([
@@ -98,9 +105,7 @@ class RecurringDateElementQuery extends ElementQuery
             $query->andWhere(['first' => false]);
         }
 
-        return array_map(function ($occurrence) {
-            return Occurrence::fromArray($occurrence);
-        }, $query->all());
+        return $query;
     }
 
     /**
@@ -140,18 +145,6 @@ class RecurringDateElementQuery extends ElementQuery
     {
         if ($value instanceof RecurringDatesField) {
             $this->fieldId = [$value->id];
-        } elseif (is_string($value) || (is_array($value) && count($value) === 1)) {
-            if (!is_string($value)) {
-                $value = reset($value);
-            }
-
-            $field = Craft::$app->getFields()->getFieldByHandle($value);
-
-            if ($field && $field instanceof RecurringDatesField) {
-                $this->fieldId = [$field->id];
-            } else {
-                $this->fieldId = false;
-            }
         } elseif ($value !== null) {
             $this->fieldId = (new Query())
                 ->select(['id'])
@@ -409,7 +402,7 @@ class RecurringDateElementQuery extends ElementQuery
             $this->ownerId = null;
         } elseif (is_numeric($this->ownerId)) {
             $this->ownerId = [$this->ownerId];
-        } elseif (!is_array($this->ownerId) || !ArrayHelper::isNumeric($this->ownerId)) {
+        } elseif (is_array($this->ownerId) && !ArrayHelper::isNumeric($this->ownerId)) {
             throw new InvalidConfigException('Invalid ownerId param value');
         }
     }

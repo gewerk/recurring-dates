@@ -9,7 +9,8 @@
 namespace Gewerk\RecurringDates\Event;
 
 use craft\base\ElementInterface;
-use Gewerk\RecurringDates\Override\Eluceo\iCal\Component\Event as EventComponent;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
+use Gewerk\RecurringDates\Override\Eluceo\iCal\Domain\Entity\Event as ICalEvent;
 use yii\base\Event;
 
 /**
@@ -19,12 +20,12 @@ use yii\base\Event;
  */
 class IcsEventElementEvent extends Event
 {
-    /** @var ElementInterface */
-    public $element;
+    /** @var ElementInterface Owner element */
+    public ElementInterface $element;
 
-    /** @var RecurringDateElement */
-    public $date;
+    /** @var RecurringDateElement Recurring date element */
+    public RecurringDateElement $date;
 
-    /** @var EventComponent */
-    public $eventComponent;
+    /** @var ICalEvent iCal event */
+    public ICalEvent $icalEvent;
 }

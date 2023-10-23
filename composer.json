@@ -24,24 +24,25 @@
     "rss": "https://github.com/gewerk/recurring-dates/commits/v2.atom"
   },
   "require": {
-    "craftcms/cms": "^3.6.0",
-    "eluceo/ical": "^0.16.1",
-    "openpsa/ranger": "^0.5.2",
+    "craftcms/cms": "^4.0",
+    "eluceo/ical": "^2.12",
+    "openpsa/ranger": "^0.5",
     "simshaun/recurr": "^5.0"
   },
   "require-dev": {
-    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
-    "squizlabs/php_codesniffer": "^3.5"
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main",
+    "craftcms/rector": "dev-main"
   },
   "config": {
     "sort-packages": true,
     "optimize-autoloader": true,
     "platform": {
-      "php": "7.3"
+      "php": "8.0.2"
     },
     "allow-plugins": {
-      "yiisoft/yii2-composer": false,
-      "craftcms/plugin-installer": false,
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true,
       "dealerdirect/phpcodesniffer-composer-installer": true
     }
   },
@@ -56,13 +57,5 @@
     "documentationUrl": "https://gewerk.dev/plugins/recurring-dates",
     "changelogUrl": "https://raw.githubusercontent.com/gewerk/recurring-dates/main/CHANGELOG.md",
     "class": "Gewerk\\RecurringDates\\Plugin"
-  },
-  "scripts": {
-    "install-codestandards": [
-      "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
-    ],
-    "post-install-cmd": [
-      "@install-codestandards"
-    ]
   }
 }

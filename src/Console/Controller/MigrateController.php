@@ -15,7 +15,6 @@ use craft\db\Table;
 use craft\errors\UnsupportedSiteException;
 use craft\helpers\Console;
 use craft\helpers\Json;
-use craft\queue\Queue;
 use craft\services\Elements;
 use craft\services\Fields;
 use DateTime;
@@ -48,8 +47,7 @@ class MigrateController extends Controller
     /**
      * @inheritdoc
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
-    public function options($actionID)
+    public function options($actionID): array
     {
         return ['offset', 'sites'];
     }
@@ -78,9 +76,6 @@ class MigrateController extends Controller
 
         /** @var Elements */
         $elementsService = Craft::$app->getElements();
-
-        /** @var Queue */
-        $queue = Craft::$app->getQueue();
 
         // Resolve source field
         $sourceField = $fieldsService->getFieldByHandle($sourceFieldHandle);
@@ -171,13 +166,13 @@ class MigrateController extends Controller
                         'WEEKLY' : strtoupper($calendarizeRecord['repeatType'])
                 );
 
-                if ($rrule->getFreq() === 'WEEKLY') {
-                    $rrule->setByDay(array_map(function ($day) use ($weekdays) {
+                if ($rrule->getFreqAsText() === 'WEEKLY') {
+                    $rrule->setByDay(array_map(function($day) use ($weekdays) {
                         return $weekdays[$day];
                     }, array_keys($calendarizeRecord['days'] ?? [])));
-                } elseif ($rrule->getFreq() === 'MONTHLY' && $calendarizeRecord['days'] === 'onMonthDay') {
+                } elseif ($rrule->getFreqAsText() === 'MONTHLY' && $calendarizeRecord['days'] === 'onMonthDay') {
                     $position = $this->weekOfMonth($recurringDate->startDate);
-                    $day = $weekdays[$this->startDate->format('w')];
+                    $day = $weekdays[$recurringDate->startDate->format('w')];
 
                     $rrule->setBySetPosition([$position]);
                     $rrule->setByDay([$day]);
@@ -230,19 +225,19 @@ class MigrateController extends Controller
                     $typedRecord[$key] = $this->convertDate($value);
                     break;
                 case 'exceptions':
-                    $value = is_string($value) ? Json::decode($value) : $value;
-                    $typedRecord[$key] = array_map(function ($e) {
+                    $value = Json::decodeIfJson($value);
+                    $typedRecord[$key] = array_map(function($e) {
                         return $this->convertDate($e);
                     }, $value ?? []);
                     break;
                 case 'timeChanges':
-                    $value = is_string($value) ? Json::decode($value) : $value;
-                    $typedRecord[$key] = array_map(function ($e) {
+                    $value = Json::decodeIfJson($value);
+                    $typedRecord[$key] = array_map(function($e) {
                         return $this->convertDate($e);
                     }, $value ?? []);
                     break;
                 case 'days':
-                    $typedRecord[$key] = is_string($value) && isset($value) ? Json::decode($value) : $value;
+                    $typedRecord[$key] = Json::decodeIfJson($value);
                     break;
                 case 'allDay':
                 case 'repeats':
@@ -287,12 +282,12 @@ class MigrateController extends Controller
      * Gets the week order (first, second, …) from a DateTime
      *
      * @param null|DateTime $date
-     * @return string
+     * @return int
      */
-    private function weekOfMonth(?DateTime $date): string
+    private function weekOfMonth(?DateTime $date): int
     {
         if (!$date) {
-            return '';
+            return 0;
         }
 
         $prefixes = [1, 2, 3, 4, -1];

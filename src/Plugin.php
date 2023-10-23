@@ -24,9 +24,9 @@ use Gewerk\RecurringDates\Behavior\ElementBehavior;
 use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
 use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Migration\InstallMigration;
-use Gewerk\RecurringDates\Service\IcsService;
 use Gewerk\RecurringDates\Service\FieldService;
 use Gewerk\RecurringDates\Service\FormatService;
+use Gewerk\RecurringDates\Service\IcsService;
 use Gewerk\RecurringDates\Twig\Extension\RecurringDatesTwigExtension;
 use Gewerk\RecurringDates\Twig\Variable\IcsVariable;
 use yii\base\Event;
@@ -54,7 +54,7 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      */
-    public $schemaVersion = '0.6.1';
+    public string $schemaVersion = '0.6.1';
 
     /**
      * @var string
@@ -175,7 +175,7 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      */
-    protected function createInstallMigration()
+    protected function createInstallMigration(): ?\craft\db\Migration
     {
         return new InstallMigration();
     }
@@ -190,7 +190,7 @@ class Plugin extends BasePlugin
         Event::on(
             Fields::class,
             Fields::EVENT_REGISTER_FIELD_TYPES,
-            function (RegisterComponentTypesEvent $event) {
+            function(RegisterComponentTypesEvent $event) {
                 $event->types[] = RecurringDatesField::class;
             }
         );
@@ -206,7 +206,7 @@ class Plugin extends BasePlugin
         Event::on(
             View::class,
             View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
-            function (RegisterTemplateRootsEvent $event) {
+            function(RegisterTemplateRootsEvent $event) {
                 $event->roots[$this->id] = $this->getResourcePath() . DIRECTORY_SEPARATOR . 'templates';
             }
         );
@@ -222,7 +222,7 @@ class Plugin extends BasePlugin
         Event::on(
             ElementQuery::class,
             ElementQuery::EVENT_DEFINE_BEHAVIORS,
-            function (DefineBehaviorsEvent $event) {
+            function(DefineBehaviorsEvent $event) {
                 $event->behaviors['recurring-dates'] = ElementQueryBehavior::class;
             }
         );
@@ -230,7 +230,7 @@ class Plugin extends BasePlugin
         Event::on(
             Element::class,
             Element::EVENT_DEFINE_BEHAVIORS,
-            function (DefineBehaviorsEvent $event) {
+            function(DefineBehaviorsEvent $event) {
                 $event->behaviors['recurring-dates'] = ElementBehavior::class;
             }
         );
@@ -258,7 +258,7 @@ class Plugin extends BasePlugin
         Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
-            function (Event $event) {
+            function(Event $event) {
                 /** @var CraftVariable $variables */
                 $variables = $event->sender;
                 $variables->set('ics', IcsVariable::class);

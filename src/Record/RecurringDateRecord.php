@@ -10,22 +10,24 @@ namespace Gewerk\RecurringDates\Record;
 
 use craft\db\ActiveRecord;
 use craft\records\Element;
+use DateTime;
+use DateTimeInterface;
 use Gewerk\RecurringDates\Plugin;
 use yii\db\ActiveQueryInterface;
 
 /**
  * A record of an running date.
  *
- * @property int $id
- * @property int $ownerId
- * @property int $fieldId
- * @property DateTime $startDate
- * @property DateTime $endDate
- * @property bool $allDay
+ * @property int|null $id
+ * @property int|null $ownerId
+ * @property int|null $fieldId
+ * @property DateTime|null $startDate
+ * @property DateTime|null $endDate
+ * @property bool|null $allDay
  * @property string|null $rrule
  * @property int|null $count
- * @property DateTime|null $untilDate
- * @property int $sortOrder
+ * @property DateTimeInterface|null $untilDate
+ * @property int|null $sortOrder
  * @property bool $deletedWithOwner
  * @package Gewerk\RecurringDates\Record
  */

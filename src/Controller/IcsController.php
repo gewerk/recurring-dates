@@ -20,7 +20,7 @@ class IcsController extends Controller
     /**
      * @inheritdoc
      */
-    protected $allowAnonymous = ['make'];
+    protected array|int|bool $allowAnonymous = ['make'];
 
     /**
      * Generates an iCalendar file

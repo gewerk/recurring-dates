@@ -36,7 +36,7 @@ class OccurrencesController extends Controller
         $query = RecurringDateElement::find()
             ->siteId('*')
             ->trashed(null)
-            ->anyStatus();
+            ->status(null);
 
         // Total elements
         $total = (int) $query->count();
@@ -64,7 +64,7 @@ class OccurrencesController extends Controller
                     'startDate' => Db::prepareDateForDb($element->startDate),
                     'endDate' => Db::prepareDateForDb($element->endDate),
                     'allDay' => (int) $element->allDay,
-                ], false);
+                ]);
 
                 // Save additional occurrences
                 if ($element->rrule) {

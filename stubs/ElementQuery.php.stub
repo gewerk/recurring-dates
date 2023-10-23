@@ -1,0 +1,10 @@
+<?php
+
+namespace craft\elements\db;
+
+/**
+ * @mixin \Gewerk\RecurringDates\Behavior\ElementQueryBehavior
+ */
+class ElementQuery
+{
+}

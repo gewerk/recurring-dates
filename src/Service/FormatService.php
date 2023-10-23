@@ -23,10 +23,10 @@ use OpenPsa\Ranger\Ranger;
 class FormatService extends Component
 {
     /** @var Ranger[] */
-    private $ranger = [];
+    private array $ranger = [];
 
     /** @var int[] */
-    private $formats = [
+    private array $formats = [
         'none' => IntlDateFormatter::NONE,
         'full' => IntlDateFormatter::FULL,
         'long' => IntlDateFormatter::LONG,
@@ -42,19 +42,19 @@ class FormatService extends Component
      * @param string|int $dateFormat
      * @param string|int $timeFormat
      * @param string|null $locale
-     * @param string|null $rangeSeparator
-     * @param string|null $dateTimeSeparator
+     * @param string $rangeSeparator
+     * @param string $dateTimeSeparator
      * @return string
      */
     public function dateRange(
-        $startDate,
-        $endDate,
-        $dateFormat = IntlDateFormatter::FULL,
-        $timeFormat = IntlDateFormatter::SHORT,
-        string $locale = null,
+        string|DateTime $startDate,
+        string|DateTime $endDate,
+        string|int $dateFormat = IntlDateFormatter::FULL,
+        string|int $timeFormat = IntlDateFormatter::SHORT,
+        ?string $locale = null,
         string $rangeSeparator = '–',
-        string $dateTimeSeparator = ', '
-    ) {
+        string $dateTimeSeparator = ', ',
+    ): string {
         // Get current locale
         $locale = $locale ?: Craft::$app->getLocale()->getLanguageID();
 

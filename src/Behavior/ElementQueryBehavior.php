@@ -20,7 +20,7 @@ use yii\base\Behavior;
 class ElementQueryBehavior extends Behavior
 {
     /** @var bool|string|string[] */
-    public $withOngoingDates = true;
+    public bool|string|array $withOngoingDates = true;
 
     /**
      * Sets if query should include ongoing dates. A boolean values enables or
@@ -30,7 +30,7 @@ class ElementQueryBehavior extends Behavior
      * @param bool|string|string[] $value
      * @return void
      */
-    public function setWithOngoingDates($value)
+    public function setWithOngoingDates(bool|string|array $value): void
     {
         $this->withOngoingDates = $value;
     }
@@ -40,7 +40,7 @@ class ElementQueryBehavior extends Behavior
      *
      * @return bool|string|string[]
      */
-    public function getWithOngoingDates()
+    public function getWithOngoingDates(): bool|string|array
     {
         return $this->withOngoingDates;
     }

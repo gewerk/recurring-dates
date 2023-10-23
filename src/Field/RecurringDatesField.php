@@ -27,8 +27,8 @@ use craft\validators\ArrayValidator;
 use craft\web\View;
 use DateTime;
 use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
-use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\DateExclusion;
 use Recurr\Exception as RecurrException;
@@ -44,27 +44,27 @@ class RecurringDatesField extends Field
     /**
      * @var int|null Min dates
      */
-    public $min = 0;
+    public ?int $min = 0;
 
     /**
      * @var int|null Max dates
      */
-    public $max = null;
+    public ?int $max = null;
 
     /**
      * @var bool Allow recurring
      */
-    public $allowRecurring = true;
+    public bool $allowRecurring = true;
 
     /**
      * @var bool Static
      */
-    public $static = false;
+    public bool $static = false;
 
     /**
      * @var bool Fixed field
      */
-    private $fixed = false;
+    private bool $fixed = false;
 
     /**
      * @inheritdoc
@@ -102,6 +102,14 @@ class RecurringDatesField extends Field
 
     /**
      * @inheritdoc
+     */
+    public function useFieldset(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
      * @return string[][]
      */
     protected function defineRules(): array
@@ -115,7 +123,7 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getSettingsHtml(): ?string
     {
         return
             Cp::textFieldHtml([
@@ -157,7 +165,7 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function normalizeValue($value, ElementInterface $element = null)
+    public function normalizeValue(mixed $value, ?ElementInterface $element = null): mixed
     {
         if ($value instanceof RecurringDateElementQuery) {
             return $value;
@@ -177,13 +185,12 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
-    public function serializeValue($value, ElementInterface $element = null)
+    public function serializeValue(mixed $value, ?ElementInterface $element = null): mixed
     {
+        /** @var RecurringDateElementQuery $value */
         $serialized = [];
         $new = 0;
 
-        /** @var RecurringDateElementQuery $value */
         foreach ($value->all() as $recurringDate) {
             /** @var RecurringDateElement $recurringDate */
             $recurringDateId = $recurringDate->id ?? 'new' . ++$new;
@@ -196,7 +203,7 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function getStaticHtml($value, ElementInterface $element): string
+    public function getStaticHtml(mixed $value, ElementInterface $element): string
     {
         $this->fixed = true;
         $inputHtml = $this->inputHtml($value, $element);
@@ -209,7 +216,7 @@ class RecurringDatesField extends Field
      * @inheritdoc
      * @param RecurringDateElementQuery|null $value
      */
-    protected function inputHtml($value, ElementInterface $element = null): string
+    protected function inputHtml(mixed $value, ElementInterface $element = null): string
     {
         // Register asset bundle
         /** @var View */
@@ -222,7 +229,7 @@ class RecurringDatesField extends Field
         }
 
         if ($value instanceof RecurringDateElementQuery) {
-            $value = $value->getCachedResult() ?? $value->limit(null)->anyStatus()->all();
+            $value = $value->getCachedResult() ?? $value->limit(null)->status(null)->all();
         }
 
         // Get dates
@@ -266,21 +273,7 @@ class RecurringDatesField extends Field
             [
                 'validateDates',
                 'on' => [Element::SCENARIO_ESSENTIALS, Element::SCENARIO_DEFAULT, Element::SCENARIO_LIVE],
-            ],
-            [
-                ArrayValidator::class,
-                'min' => $this->min ?: null,
-                'max' => $this->max ?: null,
-                'tooFew' => Craft::t(
-                    'recurring-dates',
-                    '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.'
-                ),
-                'tooMany' => Craft::t(
-                    'recurring-dates',
-                    '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.'
-                ),
                 'skipOnEmpty' => false,
-                'on' => Element::SCENARIO_LIVE,
             ],
         ];
     }
@@ -314,13 +307,32 @@ class RecurringDatesField extends Field
         if (!$allDatesValidate) {
             $value->setCachedResult($dates);
         }
+
+        if ($element->getScenario() === Element::SCENARIO_LIVE && ($this->min || $this->max)) {
+            $arrayValidator = new ArrayValidator([
+                'min' => $this->min ?: null,
+                'max' => $this->max ?: null,
+                'tooFew' => Craft::t(
+                    'recurring-dates',
+                    '{attribute} should contain at least {min, number} {min, plural, one{date} other{dates}}.'
+                ),
+                'tooMany' => Craft::t(
+                    'recurring-dates',
+                    '{attribute} should contain at most {max, number} {max, plural, one{date} other{dates}}.'
+                ),
+                'skipOnEmpty' => false,
+            ]);
+
+            if (!$arrayValidator->validate($dates, $error)) {
+                $element->addError($this->handle, $error);
+            }
+        }
     }
 
     /**
      * @inheritdoc
      */
-    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
-    public function isValueEmpty($value, ElementInterface $element): bool
+    public function isValueEmpty(mixed $value, ElementInterface $element): bool
     {
         /** @var RecurringDateElementQuery $value */
         return $value->count() === 0;
@@ -337,7 +349,7 @@ class RecurringDatesField extends Field
 
         foreach (Craft::$app->getSites()->getAllSiteIds() as $siteId) {
             $query = RecurringDateElement::find();
-            $query->anyStatus();
+            $query->status(null);
             $query->siteId($siteId);
             $query->ownerId($element->id);
 
@@ -356,7 +368,7 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function afterElementPropagate(ElementInterface $element, bool $isNew)
+    public function afterElementPropagate(ElementInterface $element, bool $isNew): void
     {
         $fieldService = Plugin::$plugin->getFieldService();
         $resetValue = false;
@@ -383,11 +395,11 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function afterElementRestore(ElementInterface $element)
+    public function afterElementRestore(ElementInterface $element): void
     {
         foreach (ElementHelper::supportedSitesForElement($element) as $siteInfo) {
             $recurringDates = RecurringDateElement::find()
-                ->anyStatus()
+                ->status(null)
                 ->siteId($siteInfo['siteId'])
                 ->ownerId($element->id)
                 ->trashed()
@@ -405,11 +417,11 @@ class RecurringDatesField extends Field
     /**
      * @inheritdoc
      */
-    public function modifyElementsQuery(ElementQueryInterface $query, $value)
+    public function modifyElementsQuery(ElementQueryInterface $query, mixed $value): void
     {
         /** @var ElementQuery $query */
         if (!$value) {
-            return null;
+            return;
         }
 
         // Prefix handle query
@@ -455,7 +467,7 @@ class RecurringDatesField extends Field
 
         $query->subQuery->addGroupBy('[[elements.id]]');
 
-        return null;
+        return;
     }
 
     /**
@@ -467,7 +479,7 @@ class RecurringDatesField extends Field
      */
     private function populateQuery(
         RecurringDateElementQuery $query,
-        ElementInterface $element = null
+        ElementInterface $element = null,
     ): RecurringDateElementQuery {
         if ($element && $element->id) {
             $query->ownerId = $element->id;
@@ -500,7 +512,7 @@ class RecurringDatesField extends Field
             ->fieldId($this->id)
             ->ownerId($element->id)
             ->siteId($element->siteId)
-            ->anyStatus()
+            ->status(null)
             ->indexBy('id')
             ->all() : [];
 

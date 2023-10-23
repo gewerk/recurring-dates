@@ -32,7 +32,7 @@ class ElementBehavior extends Behavior
      * @param string $fieldHandle
      * @return Occurrence|null
      */
-    public function getNextOccurrence(string $fieldHandle)
+    public function getNextOccurrence(string $fieldHandle): ?Occurrence
     {
         if ($field = $this->owner->getFieldLayout()->getFieldByHandle($fieldHandle)) {
             $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
@@ -55,7 +55,7 @@ class ElementBehavior extends Behavior
      * @param string $fieldHandle
      * @return Occurrence|null
      */
-    public function getNextOrLastOccurrence(string $fieldHandle)
+    public function getNextOrLastOccurrence(string $fieldHandle): ?Occurrence
     {
         if ($occurrence = $this->getNextOccurrence($fieldHandle)) {
             return $occurrence;
@@ -80,7 +80,7 @@ class ElementBehavior extends Behavior
      * @param string $fieldHandle
      * @return Occurrence[]
      */
-    public function getOccurrences(string $fieldHandle, bool $onlyFutureOccurrences = true)
+    public function getOccurrences(string $fieldHandle, bool $onlyFutureOccurrences = true): array
     {
         if ($field = $this->owner->getFieldLayout()->getFieldByHandle($fieldHandle)) {
             $utcNow = (new DateTime())->setTimezone(new DateTimeZone('utc'));
@@ -90,7 +90,7 @@ class ElementBehavior extends Behavior
                 $query->andWhere(Db::parseDateParam('startDate', $utcNow, '>='));
             }
 
-            return array_map(function ($occurrence) {
+            return array_map(function($occurrence) {
                 return Occurrence::fromArray($occurrence);
             }, $query->all());
         }
