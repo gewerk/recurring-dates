@@ -181,7 +181,6 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function setAllDay(bool $allDay = false)
     {
         $this->allDay = $allDay;
-        $this->normalizeTime();
     }
 
     /**
@@ -193,7 +192,6 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function setStartDate(?DateTime $startDate = null)
     {
         $this->startDate = $startDate;
-        $this->normalizeTime();
     }
 
     /**
@@ -205,7 +203,6 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
     public function setEndDate(?DateTime $endDate = null)
     {
         $this->endDate = $endDate;
-        $this->normalizeTime();
     }
 
     /**
@@ -333,9 +330,6 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $record = new RecurringDateRecord();
             $record->id = (int) $this->id;
         }
-
-        // Normalize time for all day entries
-        $this->normalizeTime();
 
         // Set attributes
         $record->ownerId = (int) $this->getOwner()->id;
@@ -467,23 +461,5 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         ];
 
         return $rules;
-    }
-
-    /**
-     * Normalizes time for all day entries
-     *
-     * @return void
-     */
-    private function normalizeTime()
-    {
-        if ($this->allDay) {
-            if ($this->startDate instanceof DateTime) {
-                $this->startDate->setTime(0, 0, 0);
-            }
-
-            if ($this->endDate instanceof DateTime) {
-                $this->endDate->setTime(23, 59, 59);
-            }
-        }
     }
 }

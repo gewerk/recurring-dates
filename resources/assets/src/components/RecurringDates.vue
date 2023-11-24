@@ -23,7 +23,7 @@
           <input type="hidden" :name="'startEnd[start][raw]' | namespaceInputName(date.name)" v-if="date.startEnd" :value="date.startEnd.start | dateRaw" :disabled="disabled" />
           <input type="hidden" :name="'startEnd[end][raw]' | namespaceInputName(date.name)" v-if="date.startEnd" :value="date.startEnd.end | dateRaw" :disabled="disabled" />
 
-          <v-date-picker v-model="date.startEnd" :mode="date.allDay ? 'date' : 'dateTime'" is-range is24hr class="cdf-date__start-end">
+          <v-date-picker :timezone="settings.timezone" v-model="date.startEnd" :mode="date.allDay ? 'date' : 'dateTime'" is-range is24hr class="cdf-date__start-end">
             <template v-slot="{ inputValue, inputEvents }">
               <label :for="'start' | namespaceInputId(`${id}-${index}`)" class="visually-hidden">
                 {{ 'Start' | t() }}
@@ -180,7 +180,7 @@
             </div>
 
             <input type="hidden" :name="'repeat[endsOn][raw]' | namespaceInputName(date.name)" :value="date.repeat.endsOn | dateRaw" v-if="date.repeat.endsAfter === 'onDate'" />
-            <v-date-picker v-if="date.repeat.endsAfter === 'onDate'" v-model="date.repeat.endsOn" mode="date" is24hr class="cdf-date__recurring-end-input">
+            <v-date-picker :timezone="settings.timezone" v-if="date.repeat.endsAfter === 'onDate'" v-model="date.repeat.endsOn" mode="date" is24hr class="cdf-date__recurring-end-input">
               <template v-slot="{ inputValue, inputEvents }">
                 <label class="visually-hidden" :for="'repeat-end-on' | namespaceInputId(`${id}-${index}`)">
                   {{ 'End on Date' | t() }}
@@ -206,7 +206,7 @@
           <div class="cdf-date__exceptions">
             <div v-for="(exception, index) in date.repeat.exceptions" :key="index" class="cdf-date__exception">
               <input type="hidden" :name="`repeat[exceptions][${index}][raw]` | namespaceInputName(date.name)" :value="date.repeat.exceptions[index] | dateRaw" />
-              <v-date-picker v-model="date.repeat.exceptions[index]" mode="date" is24hr class="cdf-date__exception-input">
+              <v-date-picker :timezone="settings.timezone" v-model="date.repeat.exceptions[index]" mode="date" is24hr class="cdf-date__exception-input">
                 <template v-slot="{ inputValue, inputEvents }">
                   <label class="visually-hidden" :for="'exception' | namespaceInputId(`${id}-${index}`)">
                     {{ 'Exception on Date' | t() }}
@@ -296,6 +296,7 @@
           allowRecurring: true,
           static: false,
           fixed: false,
+          timezone: null,
           ...this.settings,
         },
         dates: this.value.map((event) => new EventModel(this.name, event.id, event.fields, event.errors)),

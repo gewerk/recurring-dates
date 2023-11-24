@@ -249,6 +249,7 @@ class RecurringDatesField extends Field
             'allowRecurring' => $this->allowRecurring,
             'static' => $this->static,
             'fixed' => $this->fixed,
+            'timezone' => Craft::$app->getTimeZone(),
         ];
 
         // Register js
@@ -570,7 +571,10 @@ class RecurringDatesField extends Field
                 if ($data['startEnd']['start'] instanceof DateTime) {
                     $recurringDate->startDate = clone $data['startEnd']['start'];
                 } elseif (isset($data['startEnd']['start']['raw'])) {
-                    $recurringDate->startDate = DateTimeHelper::toDateTime($data['startEnd']['start']['raw']);
+                    $recurringDate->startDate = DateTimeHelper::toDateTime(
+                        $data['startEnd']['start']['raw'],
+                        assumeSystemTimeZone: true,
+                    ) ?: null;
                 } else {
                     $recurringDate->startDate = null;
                 }
@@ -578,7 +582,10 @@ class RecurringDatesField extends Field
                 if ($data['startEnd']['end'] instanceof DateTime) {
                     $recurringDate->endDate = clone $data['startEnd']['end'];
                 } elseif (isset($data['startEnd']['end']['raw'])) {
-                    $recurringDate->endDate = DateTimeHelper::toDateTime($data['startEnd']['end']['raw']);
+                    $recurringDate->endDate = DateTimeHelper::toDateTime(
+                        $data['startEnd']['end']['raw'],
+                        assumeSystemTimeZone: true,
+                    ) ?: null;
                 } else {
                     $recurringDate->endDate = null;
                 }

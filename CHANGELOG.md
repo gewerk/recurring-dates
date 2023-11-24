@@ -16,6 +16,7 @@
 ### Fixed
 
 * Fix transitions deadlocks
+* Use configured Craft CMS system timezone for inputs
 
 ## 1.0.0-alpha.1 - 2023-11-24
 
