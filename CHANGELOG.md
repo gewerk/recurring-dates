@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+* `Gewerk\RecurringDates\Model\Occurrence::$isPast`
+* `Gewerk\RecurringDates\Model\Occurrence::getIsPast()`
+* `Gewerk\RecurringDates\Model\Occurrence::$isUpcoming`
+* `Gewerk\RecurringDates\Model\Occurrence::getIsUpcoming()`
+* `Gewerk\RecurringDates\Model\Occurrence::$isAllDay`
+* `Gewerk\RecurringDates\Model\Occurrence::getIsAllDay()`
+* `Gewerk\RecurringDates\Model\Occurrence::$isMultiDay`
+* `Gewerk\RecurringDates\Model\Occurrence::getIsMultiDay()`
+
 ### Fixed
 
 * Fix transitions deadlocks
