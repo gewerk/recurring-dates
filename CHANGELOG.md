@@ -14,7 +14,11 @@
 
 ## 1.0.0-alpha.0 - 2023-10-23
 
-* Upgrade plugin to Craft CMS 4
+### Breaking
+
+* *Upgrade to Craft CMS 4.0*
+* *Breaking*: Replaced `Gewerk\RecurringDates\Event\IcsEventElementEvent::$eventComponent` with `Gewerk\RecurringDates\Event\IcsEventElementEvent::$icalEvent` and a new `ICalEvent` model
+* Upgraded `eluceo/ical` to version 2.7
 
 ## 0.6.3 - 2023-09-05
 
