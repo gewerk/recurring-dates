@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Check if owner is defined before accessing
+
 ## 1.0.0-alpha.0 - 2023-10-23
 
 * Upgrade plugin to Craft CMS 4

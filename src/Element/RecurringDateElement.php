@@ -242,21 +242,23 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
      */
     public function getOwner(): ElementInterface
     {
-        if ($this->owner === null) {
+        if (!isset($this->owner)) {
             if ($this->ownerId === null) {
                 throw new InvalidConfigException('Recurring Date entry is missing its owner ID');
             }
 
-            $this->owner = Craft::$app->getElements()->getElementById(
+            $owner = Craft::$app->getElements()->getElementById(
                 $this->ownerId,
                 null,
                 $this->siteId,
                 ['trashed' => null]
             );
 
-            if ($this->owner === null) {
+            if ($owner === null) {
                 throw new InvalidConfigException("Invalid owner ID: {$this->ownerId}");
             }
+
+            $this->owner = $owner;
         }
 
         return $this->owner;
