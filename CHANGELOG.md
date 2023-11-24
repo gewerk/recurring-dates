@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-alpha.1 - 2023-11-24
+
+### Fixed
 
 * Check if owner is defined before accessing
 
