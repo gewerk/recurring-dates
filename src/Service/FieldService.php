@@ -21,7 +21,6 @@ use Gewerk\RecurringDates\Field\RecurringDatesField;
 use Gewerk\RecurringDates\Plugin;
 use Recurr\Transformer\ArrayTransformer;
 use Recurr\Transformer\Constraint\BetweenConstraint;
-use Throwable;
 
 /**
  * Service component for the recurring dates field.
@@ -48,41 +47,31 @@ class FieldService extends Component
             $saveAll = true;
         }
 
-        /** @var RecurringDateElement[] $recurringDates */
-
         $ids = [];
         $sortOrder = 0;
 
-        $transaction = Craft::$app->getDb()->beginTransaction();
+        /** @var RecurringDateElement[] $recurringDates */
+        foreach ($recurringDates as $recurringDate) {
+            $sortOrder++;
 
-        try {
-            foreach ($recurringDates as $recurringDate) {
-                $sortOrder++;
-
-                if ($saveAll || !$recurringDate->id || $recurringDate->dirty) {
-                    $recurringDate->ownerId = $owner->id;
-                    $recurringDate->sortOrder = $sortOrder;
-                    Craft::$app->getElements()->saveElement($recurringDate, false);
-                } elseif ((int) $recurringDate->sortOrder !== $sortOrder) {
-                    $recurringDate->sortOrder = $sortOrder;
-                    Db::update(Plugin::DATES_TABLE, [
-                        'sortOrder' => $sortOrder,
-                    ], [
-                        'id' => $recurringDate->id,
-                    ], [], false);
-                }
-
-                $ids[] = $recurringDate->id;
+            if ($saveAll || !$recurringDate->id || $recurringDate->dirty) {
+                $recurringDate->ownerId = $owner->id;
+                $recurringDate->sortOrder = $sortOrder;
+                Craft::$app->getElements()->saveElement($recurringDate, false);
+            } elseif ((int) $recurringDate->sortOrder !== $sortOrder) {
+                $recurringDate->sortOrder = $sortOrder;
+                Db::update(Plugin::DATES_TABLE, [
+                    'sortOrder' => $sortOrder,
+                ], [
+                    'id' => $recurringDate->id,
+                ], [], false);
             }
 
-            // Delete any elements that shouldn't be there anymore
-            $this->deleteOtherElements($field, $owner, $ids);
-
-            $transaction->commit();
-        } catch (Throwable $e) {
-            $transaction->rollBack();
-            throw $e;
+            $ids[] = $recurringDate->id;
         }
+
+        // Delete any elements that shouldn't be there anymore
+        $this->deleteOtherElements($field, $owner, $ids);
     }
 
     /**
@@ -99,44 +88,34 @@ class FieldService extends Component
             $recurringDates = (clone $query)->status(null)->all();
         }
 
-        /** @var RecurringDateElement[] $recurringDates */
-
         $ids = [];
 
-        $transaction = Craft::$app->getDb()->beginTransaction();
+        /** @var RecurringDateElement[] $recurringDates */
+        foreach ($recurringDates as $recurringDate) {
+            $newAttributes = [
+                'canonicalId' => $target->getIsDerivative() ? $recurringDate->id : null,
+                'ownerId' => $target->id,
+                'owner' => $target,
+                'siteId' => $target->siteId,
+                'propagating' => false,
+            ];
 
-        try {
-            foreach ($recurringDates as $recurringDate) {
-                $newAttributes = [
-                    'canonicalId' => $target->getIsDerivative() ? $recurringDate->id : null,
-                    'ownerId' => $target->id,
-                    'owner' => $target,
-                    'siteId' => $target->siteId,
-                    'propagating' => false,
-                ];
-
-                if ($target->updatingFromDerivative && $recurringDate->getIsDerivative()) {
-                    /** @var RecurringDateElement */
-                    $newRecurringDate = Craft::$app->getElements()->updateCanonicalElement(
-                        $recurringDate,
-                        $newAttributes
-                    );
-                } else {
-                    /** @var RecurringDateElement */
-                    $newRecurringDate = Craft::$app->getElements()->duplicateElement($recurringDate, $newAttributes);
-                }
-
-                $ids[] = $newRecurringDate->id;
+            if ($target->updatingFromDerivative && $recurringDate->getIsDerivative()) {
+                /** @var RecurringDateElement */
+                $newRecurringDate = Craft::$app->getElements()->updateCanonicalElement(
+                    $recurringDate,
+                    $newAttributes
+                );
+            } else {
+                /** @var RecurringDateElement */
+                $newRecurringDate = Craft::$app->getElements()->duplicateElement($recurringDate, $newAttributes);
             }
 
-            // Delete any elements that shouldn't be there anymore
-            $this->deleteOtherElements($field, $target, $ids);
-
-            $transaction->commit();
-        } catch (Throwable $e) {
-            $transaction->rollBack();
-            throw $e;
+            $ids[] = $newRecurringDate->id;
         }
+
+        // Delete any elements that shouldn't be there anymore
+        $this->deleteOtherElements($field, $target, $ids);
     }
 
     /**
@@ -292,38 +271,28 @@ class FieldService extends Component
             }
         }
 
-        $transaction = Craft::$app->getDb()->beginTransaction();
-
-        try {
-            // Remove no more needed occurrences
-            if (count($savedOccurrences) > 0) {
-                Db::delete(
-                    Plugin::OCCURRENCES_TABLE,
-                    [
-                        'dateId' => ArrayHelper::getColumn($savedOccurrences, 'dateId'),
-                        'elementId' => ArrayHelper::getColumn($savedOccurrences, 'elementId'),
-                        'siteId' => ArrayHelper::getColumn($savedOccurrences, 'siteId'),
-                        'fieldId' => ArrayHelper::getColumn($savedOccurrences, 'fieldId'),
-                        'startDate' => ArrayHelper::getColumn($savedOccurrences, 'startDate'),
-                        'endDate' => ArrayHelper::getColumn($savedOccurrences, 'endDate'),
-                        'allDay' => ArrayHelper::getColumn($savedOccurrences, 'allDay'),
-                    ]
-                );
-            }
-
-            // Batch insert missing occurrences
-            Db::batchInsert(
+        // Remove no more needed occurrences
+        if (count($savedOccurrences) > 0) {
+            Db::delete(
                 Plugin::OCCURRENCES_TABLE,
-                ['dateId', 'elementId', 'siteId', 'fieldId', 'startDate', 'endDate', 'allDay'],
-                array_map('array_values', $unsavedOccurrences)
+                [
+                    'dateId' => ArrayHelper::getColumn($savedOccurrences, 'dateId'),
+                    'elementId' => ArrayHelper::getColumn($savedOccurrences, 'elementId'),
+                    'siteId' => ArrayHelper::getColumn($savedOccurrences, 'siteId'),
+                    'fieldId' => ArrayHelper::getColumn($savedOccurrences, 'fieldId'),
+                    'startDate' => ArrayHelper::getColumn($savedOccurrences, 'startDate'),
+                    'endDate' => ArrayHelper::getColumn($savedOccurrences, 'endDate'),
+                    'allDay' => ArrayHelper::getColumn($savedOccurrences, 'allDay'),
+                ]
             );
-
-            $transaction->commit();
-        } catch (Throwable $e) {
-            $transaction->rollBack();
-
-            throw $e;
         }
+
+        // Batch insert missing occurrences
+        Db::batchInsert(
+            Plugin::OCCURRENCES_TABLE,
+            ['dateId', 'elementId', 'siteId', 'fieldId', 'startDate', 'endDate', 'allDay'],
+            array_map('array_values', $unsavedOccurrences)
+        );
     }
 
     /**

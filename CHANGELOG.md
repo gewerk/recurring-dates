@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix transitions deadlocks
+
 ## 1.0.0-alpha.1 - 2023-11-24
 
 ### Fixed
