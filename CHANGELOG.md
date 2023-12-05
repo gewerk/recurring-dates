@@ -9,6 +9,7 @@
 ### Fixed
 
 * Fix missing types
+* Cleanup frontend configuration
 
 ## 1.0.0-alpha.2 - 2023-12-05
 
