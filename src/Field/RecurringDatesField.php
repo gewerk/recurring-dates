@@ -30,6 +30,8 @@ use craft\validators\ArrayValidator;
 use craft\web\View;
 use DateTime;
 use Gewerk\RecurringDates\AssetBundle\RecurringDatesAssetBundle;
+use Gewerk\RecurringDates\Behavior\ElementQueryBehavior;
+use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Element\Query\RecurringDateElementQuery;
 use Gewerk\RecurringDates\Element\RecurringDateElement;
 use Gewerk\RecurringDates\Plugin;
@@ -271,6 +273,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
     /**
      * @inheritdoc
+     * @return array<int, mixed>
      */
     public function getElementValidationRules(): array
     {
@@ -546,7 +549,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     /**
      * Parses the recurring dates from request.
      *
-     * @param array $value
+     * @param mixed[]|array<int, array{dates: mixed[], sortOrder: string[]}> $value
      * @param ElementInterface $element
      * @return RecurringDateElement[]
      */

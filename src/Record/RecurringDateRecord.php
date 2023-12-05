@@ -11,7 +11,6 @@ namespace Gewerk\RecurringDates\Record;
 use craft\db\ActiveRecord;
 use craft\records\Element;
 use DateTime;
-use DateTimeInterface;
 use Gewerk\RecurringDates\Plugin;
 use yii\db\ActiveQueryInterface;
 
@@ -26,7 +25,7 @@ use yii\db\ActiveQueryInterface;
  * @property bool|null $allDay
  * @property string|null $rrule
  * @property int|null $count
- * @property DateTimeInterface|null $untilDate
+ * @property DateTime|null $untilDate
  * @property int|null $sortOrder
  * @property bool $deletedWithOwner
  * @package Gewerk\RecurringDates\Record
@@ -36,7 +35,7 @@ class RecurringDateRecord extends ActiveRecord
     /**
      * @inheritdoc
      */
-    public static function tableName()
+    public static function tableName(): string
     {
         return Plugin::DATES_TABLE;
     }

@@ -81,6 +81,8 @@ class FormatService extends Component
     }
 
     /**
+     * Returns a Ranger instance for a locale
+     *
      * @param string $locale
      * @return Ranger
      */

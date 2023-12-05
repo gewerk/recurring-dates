@@ -6,6 +6,10 @@
 
 * *Breaking*: Removed `Gewerk\RecurringDates\Model\Occurrence::fromArray()`, use `new Occurrence($config)` instead
 
+### Fixed
+
+* Fix missing types
+
 ## 1.0.0-alpha.2 - 2023-12-05
 
 ### Breaking
