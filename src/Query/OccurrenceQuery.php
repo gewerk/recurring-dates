@@ -33,7 +33,7 @@ class OccurrenceQuery extends Query
         }
 
         return array_map(function($occurrence) {
-            return Occurrence::fromArray($occurrence);
+            return new Occurrence($occurrence);
         }, $rows);
     }
 }

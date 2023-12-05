@@ -67,11 +67,11 @@ class RecurringDateElementQuery extends ElementQuery
      *
      * @param bool $onlyFutureOccurrences
      * @param bool $includeFirstOccurrence
-     * @return Occurrence[]
+     * @return array<Occurrence>
      */
     public function getOccurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
-        return $this->occurrences($onlyFutureOccurrences, $includeFirstOccurrence)->all();
+        return $this->occurrences($onlyFutureOccurrences, $includeFirstOccurrence);
     }
 
     /**
@@ -79,9 +79,9 @@ class RecurringDateElementQuery extends ElementQuery
      *
      * @param bool $onlyFutureOccurrences
      * @param bool $includeFirstOccurrence
-     * @return OccurrenceQuery
+     * @return array<Occurrence>
      */
-    public function occurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): OccurrenceQuery
+    public function occurrences(bool $onlyFutureOccurrences = true, bool $includeFirstOccurrence = true): array
     {
         // Get occurrences
         $query = (new OccurrenceQuery())
@@ -105,7 +105,9 @@ class RecurringDateElementQuery extends ElementQuery
             $query->andWhere(['first' => false]);
         }
 
-        return $query;
+        return array_map(function ($occurrence) {
+            return new Occurrence($occurrence);
+        }, $query->all());
     }
 
     /**

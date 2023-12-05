@@ -42,21 +42,6 @@ class Occurrence extends Model
     public bool $allDay = false;
 
     /**
-     * Creates an instance from an array
-     *
-     * @param array $occurrence
-     * @return Occurrence
-     */
-    public static function fromArray(array $occurrence): self
-    {
-        return new self([
-            'startDate' => DateTimeHelper::toDateTime($occurrence['startDate']),
-            'endDate' => DateTimeHelper::toDateTime($occurrence['endDate']),
-            'allDay' => (bool) $occurrence['allDay'],
-        ]);
-    }
-
-    /**
      * Returns if this occurrence is an all day occurrence
      *
      * @return bool

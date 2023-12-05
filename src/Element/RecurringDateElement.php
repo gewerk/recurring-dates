@@ -309,8 +309,8 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $query->andWhere(['first' => false]);
         }
 
-        return array_map(function($occurrence) {
-            return Occurrence::fromArray($occurrence);
+        return array_map(function ($occurrence) {
+            return new Occurrence($occurrence);
         }, $query->all());
     }
 

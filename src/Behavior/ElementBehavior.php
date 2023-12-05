@@ -42,7 +42,7 @@ class ElementBehavior extends Behavior
                 ->one();
 
             if ($occurrence) {
-                return Occurrence::fromArray($occurrence);
+                return new Occurrence($occurrence);
             }
         }
 
@@ -67,7 +67,7 @@ class ElementBehavior extends Behavior
                 ->one();
 
             if ($occurrence) {
-                return Occurrence::fromArray($occurrence);
+                return new Occurrence($occurrence);
             }
         }
 
@@ -90,8 +90,8 @@ class ElementBehavior extends Behavior
                 $query->andWhere(Db::parseDateParam('startDate', $utcNow, '>='));
             }
 
-            return array_map(function($occurrence) {
-                return Occurrence::fromArray($occurrence);
+            return array_map(function ($occurrence) {
+                return new Occurrence($occurrence);
             }, $query->all());
         }
 
