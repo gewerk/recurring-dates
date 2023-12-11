@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-alpha.4 - 2023-12-11
 
 ### Breaking
 
