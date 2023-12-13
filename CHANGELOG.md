@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix broken query for next/last occurrence
+
 ## 1.0.0-alpha.4 - 2023-12-11
 
 ### Breaking

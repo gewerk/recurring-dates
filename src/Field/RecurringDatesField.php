@@ -36,6 +36,7 @@ use IntlDateFormatter;
 use Recurr\DateExclusion;
 use Recurr\Exception as RecurrException;
 use Recurr\Rule;
+use yii\db\Expression;
 
 /**
  * The main field
@@ -467,63 +468,6 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     /**
      * @inheritdoc
      */
-    public function modifyElementsQuery(ElementQueryInterface $query, mixed $value): void
-    {
-        // Get current date and time (and seconds set to 59 for better caching)
-        $now = new DateTime();
-        $currentTimeDb = Db::prepareDateForDb(
-            $now->setTime((int) $now->format('H'), (int) $now->format('i'), 59),
-        );
-
-        // Select occurrence as JSON (for sorting and table display)
-        $prefix = "occurrences_{$this->handle}";
-        $jsonArray = "JSON_ARRAY({$prefix}.startDate, {$prefix}.endDate, {$prefix}.allDay)";
-        $query->query->addSelect([
-            $this->handle => "IF({$prefix}.startDate, $jsonArray, NULL)",
-        ]);
-
-        // Use start date for filtering, or end date to include ongoing occurrences
-        $compareDate = $this->includeOngoing ? 'endDate' : 'startDate';
-
-        // Join occurrences table for every element to try to get next (or last if was in the past) occurrence
-        $baseFromQuery = (new Query())
-            ->select(['startDate', 'endDate', 'allDay', 'elementId', 'siteId'])
-            ->from(Plugin::OCCURRENCES_TABLE)
-            ->where(['fieldId' => $this->id, 'deleted' => false]);
-
-        $joinQuery = (new Query())
-            ->select('*')
-            ->from([
-                'o' => (clone $baseFromQuery)
-                    ->andWhere(['>', $compareDate, $currentTimeDb])
-                    ->union(
-                        (clone $baseFromQuery)->andWhere(['<=', $compareDate, $currentTimeDb]),
-                        true,
-                    ),
-            ])
-            ->groupBy(['o.elementId', 'o.siteId']);
-
-        $query->query->join('LEFT OUTER JOIN', [$prefix => $joinQuery], [
-            'AND',
-            "[[{$prefix}.elementId]] = [[elements.id]]",
-            "[[{$prefix}.siteId]] = [[elements_sites.siteId]]",
-        ]);
-
-        $query->subQuery->join('LEFT OUTER JOIN', [$prefix => $joinQuery], [
-            'AND',
-            "[[{$prefix}.elementId]] = [[elements.id]]",
-            "[[{$prefix}.siteId]] = [[elements_sites.siteId]]",
-        ]);
-
-        // Add filter
-        if ($value) {
-            $query->subQuery->andWhere(Db::parseDateParam("{$prefix}.{$compareDate}", $value));
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function getSortOption(): array
     {
         return [
@@ -539,6 +483,70 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     public function getElementConditionRuleType(): array|string|null
     {
         return DateFieldConditionRule::class;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function modifyElementsQuery(ElementQueryInterface $query, mixed $value): void
+    {
+        // Use start date for filtering, or end date to include ongoing occurrences
+        $compareDate = $this->includeOngoing ? 'endDate' : 'startDate';
+
+        $futureOccurrence = (new Query())
+            ->from(Plugin::OCCURRENCES_TABLE)
+            ->select('id')
+            ->where([
+                'elementId' => new Expression('elements.id'),
+                'siteId' => new Expression('elements_sites.siteId'),
+                'fieldId' => $this->id,
+                'deleted' => 0,
+            ])
+            ->andWhere(['>', $compareDate, new Expression('UTC_TIMESTAMP()')])
+            ->orderBy([$compareDate => SORT_ASC])
+            ->limit(1);
+
+        $pastOccurrence = (new Query())
+            ->from(Plugin::OCCURRENCES_TABLE)
+            ->select('id')
+            ->where([
+                'elementId' => new Expression('elements.id'),
+                'siteId' => new Expression('elements_sites.siteId'),
+                'fieldId' => $this->id,
+                'deleted' => 0,
+            ])
+            ->andWhere(['>', $compareDate, new Expression('UTC_TIMESTAMP()')])
+            ->orderBy([$compareDate => SORT_ASC])
+            ->limit(1);
+
+        $query->subQuery?->addSelect([
+            "{$this->handle}" => new Expression("IFNULL({$this->handle}_future.{$compareDate}, {$this->handle}_past.{$compareDate})"),
+            "{$this->handle}Id" => new Expression("IFNULL({$this->handle}_future.id, {$this->handle}_past.id)"),
+        ]);
+
+        $query->subQuery?->leftJoin(
+            ["{$this->handle}_future" => Plugin::OCCURRENCES_TABLE],
+            ['=', "[[{$this->handle}_future.id]]", $futureOccurrence],
+        );
+
+        $query->subQuery?->leftJoin(
+            ["{$this->handle}_past" => Plugin::OCCURRENCES_TABLE],
+            ['=', "[[{$this->handle}_past.id]]", $pastOccurrence],
+        );
+
+        $query->query?->leftJoin(
+            ["{$this->handle}" => Plugin::OCCURRENCES_TABLE],
+            "[[{$this->handle}.id]] = [[subquery.{$this->handle}Id]]",
+        );
+
+        $query->query?->addSelect([
+            $this->handle => new Expression("IF({$this->handle}.id, JSON_ARRAY({$this->handle}.startDate, {$this->handle}.endDate, {$this->handle}.allDay), NULL)"),
+        ]);
+
+        // Add filter
+        if ($value) {
+            $query->subQuery?->andHaving(Db::parseDateParam("{$this->handle}", $value));
+        }
     }
 
     /**
