@@ -353,6 +353,12 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             $record->id = (int) $this->id;
         }
 
+        // Set time for start and end date on all day events
+        if ($this->allDay) {
+            $this->startDate?->setTime(0, 0, 0);
+            $this->endDate?->setTime(23, 59, 59);
+        }
+
         // Set attributes
         $record->ownerId = (int) $this->getOwner()->id;
         $record->fieldId = $this->fieldId;

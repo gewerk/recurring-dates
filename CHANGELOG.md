@@ -5,6 +5,7 @@
 ### Fixed
 
 * Fix broken query for next/last occurrence
+* Set time for all days events to start and end of a day
 
 ## 1.0.0-alpha.4 - 2023-12-11
 
