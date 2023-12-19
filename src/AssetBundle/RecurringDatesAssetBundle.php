@@ -15,6 +15,7 @@ use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 use craft\web\assets\vue\VueAsset;
 use craft\web\View;
+use yii\web\AssetBundle as YiiAssetBundle;
 
 /**
  * Asset bundle for loading our Vue components and stylesheets
@@ -23,21 +24,29 @@ use craft\web\View;
  */
 class RecurringDatesAssetBundle extends AssetBundle
 {
-    /** @inheritdoc */
+    /**
+     * @var string
+     */
     public $sourcePath = '@recurring-dates/resources/assets/dist';
 
-    /** @inheritdoc */
+    /**
+     * @var array<class-string<YiiAssetBundle>>
+     */
     public $depends = [
         CpAsset::class,
         VueAsset::class,
     ];
 
-    /** @inheritdoc */
+    /**
+     * @var array<string>
+     */
     public $js = [
         'recurring-dates.js',
     ];
 
-    /** @inheritdoc */
+    /**
+     * @var array<string>
+     */
     public $css = [
         'css/recurring-dates.css',
     ];

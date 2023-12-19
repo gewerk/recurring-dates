@@ -155,7 +155,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
             if ($this->siteId) {
                 return [$this->siteId];
             } else {
-                return [Craft::$app->getSites()->getPrimarySite()->id];
+                return [(int) Craft::$app->getSites()->getPrimarySite()->id];
             }
         }
 
@@ -233,9 +233,11 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
         $this->rrule = $rrule;
         $this->rruleInstance = null;
 
-        if ($rruleInstance = $this->getRruleInstance()) {
+        $rruleInstance = $this->getRruleInstance();
+
+        if ($until = $rruleInstance?->getUntil()) {
             $this->count = $rruleInstance->getCount();
-            $this->untilDate = DateTime::createFromInterface($rruleInstance->getUntil());
+            $this->untilDate = DateTime::createFromInterface($until);
         } else {
             $this->count = null;
             $this->untilDate = null;
@@ -263,6 +265,7 @@ class RecurringDateElement extends Element implements BlockElementInterface, Jso
                 throw new InvalidConfigException('Recurring Date entry is missing its owner ID');
             }
 
+            // @phpstan-ignore-next-line
             $owner = Craft::$app->getElements()->getElementById(
                 $this->ownerId,
                 null,

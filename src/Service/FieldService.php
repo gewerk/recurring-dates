@@ -39,7 +39,7 @@ class FieldService extends Component
     public function saveElements(RecurringDatesField $field, ElementInterface $owner): void
     {
         /** @var RecurringDateElementQuery $query */
-        $query = $owner->getFieldValue($field->handle);
+        $query = $owner->getFieldValue((string) $field->handle);
 
         if (($recurringDates = $query->getCachedResult()) !== null) {
             $saveAll = false;
@@ -68,7 +68,7 @@ class FieldService extends Component
                 ], [], false);
             }
 
-            $ids[] = $recurringDate->id;
+            $ids[] = (int) $recurringDate->id;
         }
 
         // Delete any elements that shouldn't be there anymore
@@ -88,7 +88,7 @@ class FieldService extends Component
         ElementInterface $target,
     ): void {
         /** @var RecurringDateElementQuery $query */
-        $query = $source->getFieldValue($field->handle);
+        $query = $source->getFieldValue((string) $field->handle);
 
         if (($recurringDates = $query->getCachedResult()) === null) {
             $recurringDates = (clone $query)->status(null)->all();
@@ -117,7 +117,7 @@ class FieldService extends Component
                 $newRecurringDate = Craft::$app->getElements()->duplicateElement($recurringDate, $newAttributes);
             }
 
-            $ids[] = $newRecurringDate->id;
+            $ids[] = (int) $newRecurringDate->id;
         }
 
         // Delete any elements that shouldn't be there anymore
@@ -148,6 +148,7 @@ class FieldService extends Component
         $localizedOwners[$owner->siteId] = $owner;
 
         // Get the canonical owner across all sites
+        /** @var array<ElementInterface> */
         $canonicalOwners = $owner::find()
             ->id($owner->getCanonicalId())
             ->siteId(array_keys($localizedOwners))
@@ -241,6 +242,10 @@ class FieldService extends Component
     public function saveOccurrences(RecurringDateElement $element): void
     {
         $occurrences = [];
+
+        if (!$element->endDate) {
+            return;
+        }
 
         if ($rrule = $element->getRruleInstance()) {
             $transformer = new ArrayTransformer();

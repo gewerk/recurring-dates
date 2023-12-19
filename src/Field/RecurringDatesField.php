@@ -247,27 +247,26 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
      */
     protected function inputHtml(mixed $value, ElementInterface $element = null): string
     {
+        /** @var RecurringDateElementQuery $value */
+
         // Register asset bundle
-        /** @var View */
         $view = Craft::$app->getView();
         $view->registerAssetBundle(RecurringDatesAssetBundle::class);
 
         // Resolve value
-        if ($element !== null && $element->hasEagerLoadedElements($this->handle)) {
-            $value = $element->getEagerLoadedElements($this->handle);
+        if ($element !== null && $element->hasEagerLoadedElements((string) $this->handle)) {
+            $elements = $element->getEagerLoadedElements((string) $this->handle);
         }
 
-        if ($value instanceof RecurringDateElementQuery) {
-            $value = $value->getCachedResult() ?? $value->limit(null)->status(null)->all();
-        }
+        $elements = $elements ?? $value->getCachedResult() ?? $value->limit(null)->status(null)->all();
 
         // Get dates
         $dates = [];
-        foreach ($value as $date) {
+        foreach ($elements as $element) {
             $dates[] = [
-                'id' => (string) $date->id,
-                'errors' => $date->getErrors(),
-                'fields' => $date->jsonSerialize(),
+                'id' => (string) $element->id,
+                'errors' => $element->getErrors(),
+                'fields' => $element->jsonSerialize(),
             ];
         }
 
@@ -282,7 +281,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         ];
 
         // Register js
-        $id = $view->namespaceInputId($this->handle);
+        $id = $view->namespaceInputId((string) $this->handle);
         $view->registerJs("new Craft.RecurringDates('{$id}');", View::POS_END);
 
         // Render field
@@ -290,7 +289,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
             ':value' => Json::encode($dates, JSON_UNESCAPED_UNICODE),
             ':settings' => Json::encode($settings, JSON_UNESCAPED_UNICODE),
             'name' => $this->handle,
-            'id' => Html::id($this->handle),
+            'id' => Html::id((string) $this->handle),
         ]);
     }
 
@@ -318,7 +317,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     public function validateDates(ElementInterface $element)
     {
         /** @var RecurringDateElementQuery $value */
-        $value = $element->getFieldValue($this->handle);
+        $value = $element->getFieldValue((string) $this->handle);
         $dates = $value->all();
         $allDatesValidate = true;
         $scenario = $element->getScenario();
@@ -355,7 +354,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
             ]);
 
             if (!$arrayValidator->validate($dates, $error)) {
-                $element->addError($this->handle, $error);
+                $element->addError((string) $this->handle, $error);
             }
         }
     }
@@ -427,7 +426,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         if ($element->duplicateOf !== null) {
             $fieldService->duplicateElements($this, $element->duplicateOf, $element);
             $resetValue = true;
-        } elseif ($element->isFieldDirty($this->handle) || !empty($element->newSiteIds)) {
+        } elseif ($element->isFieldDirty((string) $this->handle) || !empty($element->newSiteIds)) {
             $fieldService->saveElements($this, $element);
         } elseif ($element->mergingCanonicalChanges) {
             $fieldService->mergeCanonicalChanges($this, $element);
@@ -436,7 +435,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
         if ($resetValue || $isNew) {
             /** @var RecurringDateElementQuery $query */
-            $query = $this->populateQuery($element->getFieldValue($this->handle), $element);
+            $query = $this->populateQuery($element->getFieldValue((string) $this->handle), $element);
             $query->clearCachedResult();
         }
 
@@ -467,11 +466,12 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
     /**
      * @inheritdoc
+     * @return array<string, mixed>
      */
     public function getSortOption(): array
     {
         return [
-            'label' => Craft::t('site', $this->name),
+            'label' => Craft::t('site', (string) $this->name),
             'orderBy' => ["occurrences_{$this->handle}.startDate", 'elements.id'],
             'attribute' => "field:$this->uid",
         ];
@@ -571,7 +571,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         }
 
         $query
-            ->fieldId($this->id)
+            ->fieldId((int) $this->id)
             ->siteId($element->siteId ?? null);
 
         return $query;
@@ -588,7 +588,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     {
         /** @var RecurringDateElement[] */
         $existingRecurringDates = $element->id ? RecurringDateElement::find()
-            ->fieldId($this->id)
+            ->fieldId((int) $this->id)
             ->ownerId($element->id)
             ->siteId($element->siteId)
             ->status(null)
@@ -636,7 +636,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                 $recurringDate->dirty = !empty($data);
             } else {
                 $recurringDate = new RecurringDateElement();
-                $recurringDate->fieldId = $this->id;
+                $recurringDate->fieldId = (int) $this->id;
                 $recurringDate->ownerId = $element->id;
                 $recurringDate->siteId = $element->siteId;
             }
@@ -714,8 +714,8 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
                         if ($endsOn instanceof DateTime) {
                             $rrule->setUntil(clone $endsOn);
-                        } else {
-                            $rrule->setUntil(DateTimeHelper::toDateTime($endsOn['raw']));
+                        } elseif ($value = DateTimeHelper::toDateTime($endsOn['raw'])) {
+                            $rrule->setUntil($value);
                         }
                     }
 
@@ -724,11 +724,11 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                         $exceptions = [];
 
                         foreach ($data['repeat']['exceptions'] as $exception) {
-                            if (!($exception instanceof DateTime)) {
-                                $exception = DateTimeHelper::toDateTime($exception['raw']);
+                            if ($exception instanceof DateTime) {
+                                $exceptions[] = new DateExclusion($exception, false);
+                            } elseif ($value = DateTimeHelper::toDateTime($exception['raw'])) {
+                                $exceptions[] = new DateExclusion($exception, false);
                             }
-
-                            $exceptions[] = new DateExclusion($exception, false);
                         }
 
                         $rrule->setExDates($exceptions);

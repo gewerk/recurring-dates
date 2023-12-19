@@ -8,6 +8,7 @@
 
 namespace Gewerk\RecurringDates\Element\Query;
 
+use Craft;
 use craft\base\ElementInterface;
 use craft\db\Query;
 use craft\db\QueryAbortedException;
@@ -34,31 +35,27 @@ class RecurringDateElementQuery extends ElementQuery
 {
     /**
      * @inheritdoc
+     * @var array<string, int>
      */
     protected array $defaultOrderBy = ['recurring_dates.sortOrder' => SORT_ASC];
 
     /**
-     * @var int|int[]|string|false|null The field ID(s) that the resulting dates must belong to.
-     * @used-by fieldId()
+     * @var int|array<int|string>|null
      */
-    public int|string|array|false|null $fieldId = null;
+    public array|int|string|false|null $fieldId = null;
 
     /**
-     * @var int|int[]|null The owner element ID(s) that the resulting dates must belong to.
-     * @used-by owner()
-     * @used-by ownerId()
+     * @var int|array<int|string>|null
      */
-    public int|array|null $ownerId = null;
+    public int|array|string|false|null $ownerId = null;
 
     /**
-     * @var bool|null Whether the owner elements can be drafts.
-     * @used-by allowOwnerDrafts()
+     * @var bool|null
      */
     public ?bool $allowOwnerDrafts = null;
 
     /**
-     * @var bool|null Whether the owner elements can be revisions.
-     * @used-by allowOwnerRevisions()
+     * @var bool|null
      */
     public ?bool $allowOwnerRevisions = null;
 
@@ -152,48 +149,17 @@ class RecurringDateElementQuery extends ElementQuery
         // Order by startDate
         $query->orderBy(['startDate' => 'ASC']);
 
-        return array_map(function ($occurrence) {
-            return new Occurrence($occurrence);
-        }, $query->all());
+        return $query->all();
     }
 
     /**
-     * Narrows the query results based on the field the dates belong to.
-     *
-     * Possible values include:
-     *
-     * | Value | Fetches {elements}…
-     * | - | -
-     * | `'foo'` | in a field with a handle of `foo`.
-     * | `'not foo'` | not in a field with a handle of `foo`.
-     * | `['foo', 'bar']` | in a field with a handle of `foo` or `bar`.
-     * | `['not', 'foo', 'bar']` | not in a field with a handle of `foo` or `bar`.
-     * | a [[RecurringDateElement]] object | in a field represented by the object.
-     *
-     * ---
-     *
-     * ```twig
-     * {# Fetch {elements} in the Foo field #}
-     * {% set {elements-var} = {twig-method}
-     *     .field('foo')
-     *     .all() %}
-     * ```
-     *
-     * ```php
-     * // Fetch {elements} in the Foo field
-     * ${elements-var} = {php-method}
-     *     ->field('foo')
-     *     ->all();
-     * ```
-     *
-     * @param string|string[]|RecurringDatesField|null $value The property value
-     * @return static self reference
-     * @uses $fieldId
+     * @param string|array<string>|RecurringDatesField|null $value
+     * @return static
      */
     public function field(string|RecurringDatesField|array|null $value): static
     {
         if ($value instanceof RecurringDatesField) {
-            $this->fieldId = [$value->id];
+            $this->fieldId = [(int) $value->id];
         } elseif ($value !== null) {
             $this->fieldId = (new Query())
                 ->select(['id'])
@@ -209,36 +175,8 @@ class RecurringDateElementQuery extends ElementQuery
     }
 
     /**
-     * Narrows the query results based on the field the dates belong to, per the fields’ IDs.
-     *
-     * Possible values include:
-     *
-     * | Value | Fetches {elements}…
-     * | - | -
-     * | `1` | in a field with an ID of 1.
-     * | `'not 1'` | not in a field with an ID of 1.
-     * | `[1, 2]` | in a field with an ID of 1 or 2.
-     * | `['not', 1, 2]` | not in a field with an ID of 1 or 2.
-     *
-     * ---
-     *
-     * ```twig
-     * {# Fetch {elements} in the field with an ID of 1 #}
-     * {% set {elements-var} = {twig-method}
-     *     .fieldId(1)
-     *     .all() %}
-     * ```
-     *
-     * ```php
-     * // Fetch {elements} in the field with an ID of 1
-     * ${elements-var} = {php-method}
-     *     ->fieldId(1)
-     *     ->all();
-     * ```
-     *
-     * @param int|int[]|null $value The property value
-     * @return static self reference
-     * @uses $fieldId
+     * @param int|string|array<int|string>|null $value
+     * @return static
      */
     public function fieldId($value): static
     {
@@ -247,36 +185,8 @@ class RecurringDateElementQuery extends ElementQuery
     }
 
     /**
-     * Narrows the query results based on the owner element of the dates, per the owners’ IDs.
-     *
-     * Possible values include:
-     *
-     * | Value | Fetches {elements}…
-     * | - | -
-     * | `1` | created for an element with an ID of 1.
-     * | `'not 1'` | not created for an element with an ID of 1.
-     * | `[1, 2]` | created for an element with an ID of 1 or 2.
-     * | `['not', 1, 2]` | not created for an element with an ID of 1 or 2.
-     *
-     * ---
-     *
-     * ```twig
-     * {# Fetch {elements} created for an element with an ID of 1 #}
-     * {% set {elements-var} = {twig-method}
-     *     .ownerId(1)
-     *     .all() %}
-     * ```
-     *
-     * ```php
-     * // Fetch {elements} created for an element with an ID of 1
-     * ${elements-var} = {php-method}
-     *     ->ownerId(1)
-     *     ->all();
-     * ```
-     *
-     * @param int|int[]|null $value The property value
-     * @return static self reference
-     * @uses $ownerId
+     * @param int|string|array<int|string>|null $value
+     * @return static
      */
     public function ownerId($value): static
     {
@@ -285,45 +195,17 @@ class RecurringDateElementQuery extends ElementQuery
     }
 
     /**
-     * Sets the [[ownerId()]] and [[siteId()]] parameters based on a given element.
-     *
-     * ---
-     *
-     * ```twig
-     * {# Fetch {elements} created for this entry #}
-     * {% set {elements-var} = {twig-method}
-     *     .owner(myEntry)
-     *     .all() %}
-     * ```
-     *
-     * ```php
-     * // Fetch {elements} created for this entry
-     * ${elements-var} = {php-method}
-     *     ->owner($myEntry)
-     *     ->all();
-     * ```
-     *
-     * @param ElementInterface $owner The owner element
-     * @return static self reference
-     * @uses $ownerId
+     * @param ElementInterface $owner
+     * @return static
      */
     public function owner(ElementInterface $owner): static
     {
-        $this->ownerId = [$owner->id];
+        $this->ownerId = $owner->id;
         $this->siteId = $owner->siteId;
         return $this;
     }
 
     /**
-     * Narrows the query results based on whether the dates’ owners are drafts.
-     *
-     * Possible values include:
-     *
-     * | Value | Fetches {elements}…
-     * | - | -
-     * | `true` | which can belong to a draft.
-     * | `false` | which cannot belong to a draft.
-     *
      * @param bool|null $value The property value
      * @return static self reference
      * @uses $allowOwnerDrafts
@@ -335,15 +217,6 @@ class RecurringDateElementQuery extends ElementQuery
     }
 
     /**
-     * Narrows the query results based on whether the dates’ owners are revisions.
-     *
-     * Possible values include:
-     *
-     * | Value | Fetches {elements}…
-     * | - | -
-     * | `true` | which can belong to a revision.
-     * | `false` | which cannot belong to a revision.
-     *
      * @param bool|null $value The property value
      * @return static self reference
      * @uses $allowOwnerDrafts
@@ -365,7 +238,7 @@ class RecurringDateElementQuery extends ElementQuery
         $this->joinElementTable('recurring_dates');
 
         // Add selects
-        $this->query->select([
+        $this->query?->select([
             'recurring_dates.fieldId',
             'recurring_dates.startDate',
             'recurring_dates.endDate',
@@ -379,12 +252,12 @@ class RecurringDateElementQuery extends ElementQuery
 
         // Filter by field ID
         if ($this->fieldId) {
-            $this->subQuery->andWhere(['recurring_dates.fieldId' => $this->fieldId]);
+            $this->subQuery?->andWhere(Db::parseNumericParam('[[recurring_dates.fieldId]]', $this->fieldId));
         }
 
         // Filter by owner ID
         if ($this->ownerId) {
-            $this->subQuery->andWhere(['recurring_dates.ownerId' => $this->ownerId]);
+            $this->subQuery?->andWhere(Db::parseNumericParam('[[recurring_dates.ownerId]]', $this->ownerId));
         }
 
         // Ignore revision/draft dates by default
@@ -392,14 +265,14 @@ class RecurringDateElementQuery extends ElementQuery
         $allowOwnerRevisions = $this->allowOwnerRevisions ?? ($this->id || $this->ownerId);
 
         if (!$allowOwnerDrafts || !$allowOwnerRevisions) {
-            $this->subQuery->innerJoin(['owners' => Table::ELEMENTS], '[[owners.id]] = [[recurring_dates.ownerId]]');
+            $this->subQuery?->innerJoin(['owners' => Table::ELEMENTS], '[[owners.id]] = [[recurring_dates.ownerId]]');
 
             if (!$allowOwnerDrafts) {
-                $this->subQuery->andWhere(['owners.draftId' => null]);
+                $this->subQuery?->andWhere(['owners.draftId' => null]);
             }
 
             if (!$allowOwnerRevisions) {
-                $this->subQuery->andWhere(['owners.revisionId' => null]);
+                $this->subQuery?->andWhere(['owners.revisionId' => null]);
             }
         }
 
@@ -429,7 +302,7 @@ class RecurringDateElementQuery extends ElementQuery
         if (empty($this->fieldId)) {
             $this->fieldId = null;
         } elseif (is_numeric($this->fieldId)) {
-            $this->fieldId = [$this->fieldId];
+            $this->fieldId = [(int) $this->fieldId];
         } elseif (!is_array($this->fieldId) || !ArrayHelper::isNumeric($this->fieldId)) {
             $this->fieldId = (new Query())
                 ->select(['id'])

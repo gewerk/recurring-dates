@@ -54,8 +54,9 @@ class MigrateController extends Controller
 
     /**
      * @inheritdoc
+     * @return array<string, string>
      */
-    public function optionAliases()
+    public function optionAliases(): array
     {
         return ['o' => 'offset', 's' => 'sites'];
     }
@@ -144,7 +145,7 @@ class MigrateController extends Controller
 
             // Create new record
             $recurringDate = new RecurringDateElement();
-            $recurringDate->fieldId = $targetField->id;
+            $recurringDate->fieldId = (int) $targetField->id;
             $recurringDate->sortOrder = 0;
             $recurringDate->siteId = $calendarizeRecord['ownerSiteId'];
             $recurringDate->ownerId = $calendarizeRecord['ownerId'];
@@ -209,8 +210,8 @@ class MigrateController extends Controller
     /**
      * Converts string values in correct typed values
      *
-     * @param array $record Calendarize record
-     * @return array
+     * @param array<string, string> $record Calendarize record
+     * @return array<string, mixed>
      */
     private function typizeCalendarizeRecord(array $record): array
     {
