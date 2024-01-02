@@ -49,12 +49,13 @@ class InstallMigration extends Migration
 
         // Occurrences
         $this->createTable(Plugin::OCCURRENCES_TABLE, [
+            'id' => $this->primaryKey(),
             'dateId' => $this->integer()->notNull(),
             'elementId' => $this->integer()->notNull(),
             'siteId' => $this->integer()->notNull(),
             'fieldId' => $this->integer()->notNull(),
-            'startDate' => $this->dateTime(),
-            'endDate' => $this->dateTime(),
+            'startDate' => $this->dateTime()->notNull(),
+            'endDate' => $this->dateTime()->notNull(),
             'allDay' => $this->boolean()->defaultValue(false),
             'first' => $this->boolean()->defaultValue(false),
             'deleted' => $this->boolean()->defaultValue(false),

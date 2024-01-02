@@ -23,10 +23,6 @@ class m220214_000000_delete_columns extends Migration
      */
     public function safeUp()
     {
-        if ($this->db->columnExists(Plugin::OCCURRENCES_TABLE, 'id')) {
-            $this->dropColumn(Plugin::OCCURRENCES_TABLE, 'id');
-        }
-
         if ($this->db->columnExists(Plugin::OCCURRENCES_TABLE, 'dateCreated')) {
             $this->dropColumn(Plugin::OCCURRENCES_TABLE, 'dateCreated');
         }

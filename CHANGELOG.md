@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix missing id column for occurrences on installation
+
 ## 1.0.0-beta.1 - 2024-02-01
 
 ### Fixed
