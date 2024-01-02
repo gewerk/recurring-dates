@@ -5,6 +5,7 @@
 ### Fixed
 
 * Fix missing id column for occurrences on installation
+* Adds indexes for occurrences
 
 ## 1.0.0-beta.1 - 2024-02-01
 

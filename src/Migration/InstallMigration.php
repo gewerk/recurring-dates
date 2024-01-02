@@ -64,6 +64,8 @@ class InstallMigration extends Migration
         // Indexes
         $this->createIndex(null, Plugin::OCCURRENCES_TABLE, 'startDate', false);
         $this->createIndex(null, Plugin::OCCURRENCES_TABLE, 'endDate', false);
+        $this->createIndex(null, Plugin::OCCURRENCES_TABLE, ['elementId', 'siteId', 'fieldId', 'deleted', 'startDate'], false);
+        $this->createIndex(null, Plugin::OCCURRENCES_TABLE, ['elementId', 'siteId', 'fieldId', 'deleted', 'endDate'], false);
 
         // Foreign keys
         $this->addForeignKey(null, Plugin::OCCURRENCES_TABLE, ['dateId'], Plugin::DATES_TABLE, ['id'], 'CASCADE', null);
