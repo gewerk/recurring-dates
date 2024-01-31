@@ -1,19 +1,19 @@
 # Changelog
 
-## Unreleased
+## 1.0.0-beta.3 - 2024-01-31
 
 ### Fixed
 
 * Fix exception bug
 
-## 1.0.0-beta.2 - 2024-02-01
+## 1.0.0-beta.2 - 2024-01-02
 
 ### Fixed
 
 * Fix missing id column for occurrences on installation
 * Adds indexes for occurrences
 
-## 1.0.0-beta.1 - 2024-02-01
+## 1.0.0-beta.1 - 2024-01-02
 
 ### Fixed
 
