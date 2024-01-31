@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix exception bug
+
 ## 1.0.0-beta.2 - 2024-02-01
 
 ### Fixed

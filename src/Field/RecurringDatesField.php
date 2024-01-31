@@ -727,7 +727,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                             if ($exception instanceof DateTime) {
                                 $exceptions[] = new DateExclusion($exception, false);
                             } elseif ($value = DateTimeHelper::toDateTime($exception['raw'])) {
-                                $exceptions[] = new DateExclusion($exception, false);
+                                $exceptions[] = new DateExclusion($value, false);
                             }
                         }
 
