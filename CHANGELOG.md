@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix loading of past occurrence
+
 ## 1.0.0-beta.3 - 2024-01-31
 
 ### Fixed

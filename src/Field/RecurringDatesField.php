@@ -515,7 +515,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
                 'fieldId' => $this->id,
                 'deleted' => 0,
             ])
-            ->andWhere(['>', $compareDate, new Expression('UTC_TIMESTAMP()')])
+            ->andWhere(['<=', $compareDate, new Expression('UTC_TIMESTAMP()')])
             ->orderBy([$compareDate => SORT_ASC])
             ->limit(1);
 
