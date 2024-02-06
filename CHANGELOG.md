@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+* Fix sorting for main query
+
 ## 1.0.0-beta.4 - 2024-02-05
 
 ### Fixed

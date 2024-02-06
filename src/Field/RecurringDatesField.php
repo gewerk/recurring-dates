@@ -15,7 +15,9 @@ use craft\base\Field;
 use craft\base\PreviewableFieldInterface;
 use craft\base\SortableFieldInterface;
 use craft\db\Query;
+use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
+use craft\events\PopulateElementEvent;
 use craft\fields\conditions\DateFieldConditionRule;
 use craft\helpers\Cp;
 use craft\helpers\DateTimeHelper;
@@ -540,8 +542,16 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
         );
 
         $query->query?->addSelect([
-            $this->handle => new Expression("IF({$this->handle}.id, JSON_ARRAY({$this->handle}.startDate, {$this->handle}.endDate, {$this->handle}.allDay), NULL)"),
+            "{$this->handle}" => new Expression("{$this->handle}.startDate"),
+            "{$this->handle}NextOccurrence" => new Expression("IF({$this->handle}.id, JSON_ARRAY({$this->handle}.startDate, {$this->handle}.endDate, {$this->handle}.allDay), NULL)"),
         ]);
+
+        $query->on(ElementQuery::EVENT_BEFORE_POPULATE_ELEMENT, function (PopulateElementEvent $event) {
+            if (array_key_exists("{$this->handle}NextOccurrence", $event->row)) {
+                $event->row["{$this->handle}"] = $event->row["{$this->handle}NextOccurrence"];
+                unset($event->row["{$this->handle}NextOccurrence"]);
+            }
+        });
 
         // Add filter
         if ($value) {
