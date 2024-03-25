@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Show past occurrence in preview too
 * Fix sorting
 
 ## 1.0.0-beta.5 - 2024-02-06

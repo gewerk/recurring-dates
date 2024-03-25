@@ -19,6 +19,7 @@ use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\events\PopulateElementEvent;
 use craft\fields\conditions\DateFieldConditionRule;
+use craft\helpers\ArrayHelper;
 use craft\helpers\Cp;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Db;
@@ -367,7 +368,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     public function getTableAttributeHtml(mixed $value, ElementInterface $element): string
     {
         /** @var RecurringDateElementQuery $value */
-        $occurrence = $value->getOccurrences()[0] ?? null;
+        $occurrence = ArrayHelper::firstValue($value->getOccurrences(false));
 
         if (!$occurrence) {
             return '-';
