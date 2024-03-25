@@ -474,7 +474,7 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     {
         return [
             'label' => Craft::t('site', (string) $this->name),
-            'orderBy' => ["occurrences_{$this->handle}.startDate", 'elements.id'],
+            'orderBy' => [$this->handle, 'elements.id'],
             'attribute' => "field:$this->uid",
         ];
     }

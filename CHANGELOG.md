@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Fix sorting
+
 ## 1.0.0-beta.5 - 2024-02-06
 
 ### Fixed
