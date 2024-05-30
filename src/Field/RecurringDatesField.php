@@ -523,8 +523,12 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
             ->limit(1);
 
         $query->subQuery?->addSelect([
-            "{$this->handle}" => new Expression("IFNULL({$this->handle}_future.{$compareDate}, {$this->handle}_past.{$compareDate})"),
-            "{$this->handle}Id" => new Expression("IFNULL({$this->handle}_future.id, {$this->handle}_past.id)"),
+            "{$this->handle}" => new Expression(
+                "IFNULL({$this->handle}_future.{$compareDate}, {$this->handle}_past.{$compareDate})",
+            ),
+            "{$this->handle}Id" => new Expression(
+                "IFNULL({$this->handle}_future.id, {$this->handle}_past.id)",
+            ),
         ]);
 
         $query->subQuery?->leftJoin(
@@ -544,7 +548,10 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
         $query->query?->addSelect([
             "{$this->handle}" => new Expression("{$this->handle}.startDate"),
-            "{$this->handle}NextOccurrence" => new Expression("IF({$this->handle}.id, JSON_ARRAY({$this->handle}.startDate, {$this->handle}.endDate, {$this->handle}.allDay), NULL)"),
+            "{$this->handle}NextOccurrence" => new Expression(
+                // phpcs:disable Generic.Files.LineLength.TooLong
+                "IF({$this->handle}.id, JSON_ARRAY({$this->handle}.startDate, {$this->handle}.endDate, {$this->handle}.allDay), NULL)",
+            ),
         ]);
 
         $query->on(ElementQuery::EVENT_BEFORE_POPULATE_ELEMENT, function (PopulateElementEvent $event) {
@@ -556,7 +563,12 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
 
         // Add filter
         if ($value) {
-            $query->subQuery?->andHaving(Db::parseDateParam("{$this->handle}", $value));
+            $clause = Db::parseDateParam((string) $this->handle, $value);
+            $clause[1] = new Expression(
+                "IFNULL({$this->handle}_future.{$compareDate}, {$this->handle}_past.{$compareDate})",
+            );
+
+            $query->subQuery?->andWhere($clause);
         }
     }
 
