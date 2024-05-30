@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.7 - 2024-05-30
+
+* Fix queries
+
 ## 1.0.0-beta.6 - 2024-03-25
 
 * Show past occurrence in preview too
