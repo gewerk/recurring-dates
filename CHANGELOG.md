@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0-beta.8 - 2026-01-21
+
+* Show next occurrence in field preview
+
 ## 1.0.0-beta.7 - 2024-05-30
 
 * Fix queries
