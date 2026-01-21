@@ -368,18 +368,15 @@ class RecurringDatesField extends Field implements PreviewableFieldInterface, So
     public function getTableAttributeHtml(mixed $value, ElementInterface $element): string
     {
         /** @var RecurringDateElementQuery $value */
-        $occurrence = ArrayHelper::firstValue($value->getOccurrences(false));
+        $nextOrLastOccurrence = $value->getNextOccurrence();
 
-        if (!$occurrence) {
+        if (!$nextOrLastOccurrence) {
             return '-';
         }
 
-        return Plugin::$plugin->getFormatService()->dateRange(
-            $occurrence->startDate,
-            $occurrence->endDate,
-            IntlDateFormatter::MEDIUM,
-            $occurrence->allDay ? IntlDateFormatter::NONE : IntlDateFormatter::SHORT,
-        );
+        return $nextOrLastOccurrence->format([
+            'dateFormat' => IntlDateFormatter::MEDIUM,
+        ]);
     }
 
     /**
